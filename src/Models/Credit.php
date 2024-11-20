@@ -7,27 +7,26 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Credit extends Model
 {
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-        $this->setTable(config('credits.table_name', 'credits'));
-    }
-
     protected $fillable = [
         'amount',
         'description',
         'type',
         'metadata',
         'running_balance',
+        'creditable_type',
+        'creditable_id',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'running_balance' => 'decimal:2',
+        'metadata' => 'array',
+    ];
+
+    public function __construct(array $attributes = [])
     {
-        return [
-            'amount' => 'decimal:' . config('credits.decimal_precision', 2),
-            'running_balance' => 'decimal:' . config('credits.decimal_precision', 2),
-            'metadata' => 'array',
-        ];
+        parent::__construct($attributes);
+        $this->setTable(config('credits.table_name', 'credits'));
     }
 
     public function creditable(): MorphTo

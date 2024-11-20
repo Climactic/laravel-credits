@@ -1,10 +1,12 @@
 {
     "name": "climactic/laravel-credits",
-    "description": "This is my package laravel-credits",
+    "description": "A ledger-based Laravel package for managing credit-based systems in your application.",
     "keywords": [
-        "Climactic",
         "laravel",
-        "laravel-credits"
+        "laravel-credits",
+        "balance",
+        "ledger",
+        "transactions"
     ],
     "homepage": "https://github.com/climactic/laravel-credits",
     "license": "MIT",
@@ -30,8 +32,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Climactic\\Credits\\": "src/",
-            "Climactic\\Credits\\Database\\Factories\\": "database/factories/"
+            "Climactic\\Credits\\": "src/"
         }
     },
     "autoload-dev": {
@@ -69,10 +70,7 @@
         "laravel": {
             "providers": [
                 "Climactic\\Credits\\CreditsServiceProvider"
-            ],
-            "aliases": {
-                "Credits": "Climactic\\Credits\\Facades\\Credits"
-            }
+            ]
         }
     },
     "minimum-stability": "dev",

@@ -101,7 +101,8 @@ trait HasCredits
     {
         return $this->creditTransactions()
             ->orderBy('created_at', $order)
-            ->cursorPaginate($limit);
+            ->limit($limit)
+            ->get();
     }
 
     /**
