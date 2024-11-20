@@ -16,4 +16,4 @@ class InsufficientCreditsException extends Exception
             )
         );
     }
-} 
+}

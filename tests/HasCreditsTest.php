@@ -1,7 +1,7 @@
 <?php
 
-use Climactic\Credits\Tests\TestModels\User;
 use Climactic\Credits\Exceptions\InsufficientCreditsException;
+use Climactic\Credits\Tests\TestModels\User;
 
 beforeEach(function () {
     $this->user = User::create([
@@ -13,20 +13,20 @@ beforeEach(function () {
 it('can add credits', function () {
     $transaction = $this->user->addCredits(100.00, 'Test credit');
 
-    expect((float)$transaction->amount)->toEqual(100.00)
+    expect((float) $transaction->amount)->toEqual(100.00)
         ->and($transaction->type)->toBe('credit')
-        ->and((float)$transaction->running_balance)->toEqual(100.00)
-        ->and((float)$this->user->getCurrentBalance())->toEqual(100.00);
+        ->and((float) $transaction->running_balance)->toEqual(100.00)
+        ->and((float) $this->user->getCurrentBalance())->toEqual(100.00);
 });
 
 it('can deduct credits', function () {
     $this->user->addCredits(100.00);
     $transaction = $this->user->deductCredits(50.00, 'Test debit');
 
-    expect((float)$transaction->amount)->toEqual(50.00)
+    expect((float) $transaction->amount)->toEqual(50.00)
         ->and($transaction->type)->toBe('debit')
-        ->and((float)$transaction->running_balance)->toEqual(50.00)
-        ->and((float)$this->user->getCurrentBalance())->toEqual(50.00);
+        ->and((float) $transaction->running_balance)->toEqual(50.00)
+        ->and((float) $this->user->getCurrentBalance())->toEqual(50.00);
 });
 
 it('prevents negative balance when configured', function () {
@@ -34,7 +34,7 @@ it('prevents negative balance when configured', function () {
 
     $this->user->addCredits(100.00);
 
-    expect(fn() => $this->user->deductCredits(150.00))
+    expect(fn () => $this->user->deductCredits(150.00))
         ->toThrow(InsufficientCreditsException::class);
 });
 
@@ -44,8 +44,8 @@ it('allows negative balance when configured', function () {
     $this->user->addCredits(100.00);
     $transaction = $this->user->deductCredits(150.00);
 
-    expect((float)$transaction->running_balance)->toEqual(-50.00)
-        ->and((float)$this->user->getCurrentBalance())->toEqual(-50.00);
+    expect((float) $transaction->running_balance)->toEqual(-50.00)
+        ->and((float) $this->user->getCurrentBalance())->toEqual(-50.00);
 });
 
 it('can transfer credits between users', function () {
@@ -106,8 +106,8 @@ it('maintains accurate running balance', function () {
     $expectedBalances = [100.00, 70.00, 120.00, 100.00];
 
     $transactions->each(function ($transaction, $index) use ($expectedBalances) {
-        expect((float)$transaction->running_balance)->toEqual($expectedBalances[$index]);
+        expect((float) $transaction->running_balance)->toEqual($expectedBalances[$index]);
     });
 
-    expect((float)$this->user->getCurrentBalance())->toEqual(100.00);
+    expect((float) $this->user->getCurrentBalance())->toEqual(100.00);
 });

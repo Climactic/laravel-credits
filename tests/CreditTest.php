@@ -22,7 +22,7 @@ it('can create a credit transaction', function () {
     ]);
 
     expect($credit)->toBeInstanceOf(Credit::class)
-        ->and((float)$credit->amount)->toEqual(100.00)
+        ->and((float) $credit->amount)->toEqual(100.00)
         ->and($credit->type)->toBe('credit')
         ->and($credit->metadata)->toBe(['source' => 'test'])
         ->and($credit->creditable)->toBeInstanceOf(User::class);
@@ -37,8 +37,8 @@ it('casts amount and running_balance as decimals', function () {
         'type' => 'credit',
     ]);
 
-    expect((float)$credit->amount)->toEqual(100.50)
-        ->and((float)$credit->running_balance)->toEqual(100.50);
+    expect((float) $credit->amount)->toEqual(100.50)
+        ->and((float) $credit->running_balance)->toEqual(100.50);
 });
 
 it('casts metadata as array', function () {
@@ -57,7 +57,7 @@ it('casts metadata as array', function () {
 
 it('has correct table name from config', function () {
     config(['credits.table_name' => 'custom_credits']);
-    $credit = new Credit();
+    $credit = new Credit;
 
     expect($credit->getTable())->toBe('custom_credits');
 });

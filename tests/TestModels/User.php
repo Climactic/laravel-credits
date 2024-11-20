@@ -2,8 +2,8 @@
 
 namespace Climactic\Credits\Tests\TestModels;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Climactic\Credits\Traits\HasCredits;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
