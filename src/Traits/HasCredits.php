@@ -2,29 +2,20 @@
 
 namespace Climactic\Credits\Traits;
 
-use Climactic\Credits\Models\Credit;
 use Climactic\Credits\Exceptions\InsufficientCreditsException;
+use Climactic\Credits\Models\Credit;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 trait HasCredits
 {
-    /**
-     * @return MorphMany
-     */
     public function creditTransactions(): MorphMany
     {
         return $this->morphMany(Credit::class, 'creditable');
     }
 
-    /**
-     * @param float $amount
-     * @param string|null $description
-     * @param array $metadata
-     * @return Credit
-     */
-    public function addCredits(float $amount, string $description = null, array $metadata = []): Credit
+    public function addCredits(float $amount, ?string $description = null, array $metadata = []): Credit
     {
         $currentBalance = $this->getCurrentBalance();
         $newBalance = $currentBalance + $amount;
@@ -38,18 +29,12 @@ trait HasCredits
         ]);
     }
 
-    /**
-     * @param float $amount
-     * @param string|null $description
-     * @param array $metadata
-     * @return Credit
-     */
-    public function deductCredits(float $amount, string $description = null, array $metadata = []): Credit
+    public function deductCredits(float $amount, ?string $description = null, array $metadata = []): Credit
     {
         $currentBalance = $this->getCurrentBalance();
         $newBalance = $currentBalance - $amount;
 
-        if (!config('credits.allow_negative_balance') && $newBalance < 0) {
+        if (! config('credits.allow_negative_balance') && $newBalance < 0) {
             throw new InsufficientCreditsException($amount, $currentBalance);
         }
 
@@ -62,9 +47,6 @@ trait HasCredits
         ]);
     }
 
-    /**
-     * @return float
-     */
     public function getCurrentBalance(): float
     {
         return $this->creditTransactions()
@@ -72,14 +54,7 @@ trait HasCredits
             ->value('running_balance') ?? 0.0;
     }
 
-    /**
-     * @param self $recipient
-     * @param float $amount
-     * @param string|null $description
-     * @param array $metadata
-     * @return array
-     */
-    public function transferCredits(self $recipient, float $amount, string $description = null, array $metadata = []): array
+    public function transferCredits(self $recipient, float $amount, ?string $description = null, array $metadata = []): array
     {
         DB::transaction(function () use ($recipient, $amount, $description, $metadata) {
             $this->deductCredits($amount, $description, $metadata);
@@ -92,11 +67,6 @@ trait HasCredits
         ];
     }
 
-    /**
-     * @param int $limit
-     * @param string $order
-     * @return Collection
-     */
     public function getTransactionHistory(int $limit = 10, string $order = 'desc'): Collection
     {
         return $this->creditTransactions()
@@ -105,19 +75,11 @@ trait HasCredits
             ->get();
     }
 
-    /**
-     * @param float $amount
-     * @return bool
-     */
     public function hasEnoughCredits(float $amount): bool
     {
         return $this->getCurrentBalance() >= $amount;
     }
 
-    /**
-     * @param \DateTime $date
-     * @return float
-     */
     public function getBalanceAsOf(\DateTime $date): float
     {
         return $this->creditTransactions()
