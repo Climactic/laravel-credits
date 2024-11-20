@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src=".github/assets/laravelcredits.webp" alt="Laravel Credits" width="100%" />
+
 # Laravel Credits
 
 A ledger-based Laravel package for managing credit-based systems in your application. Perfect for virtual currencies, reward points, or any credit-based feature.
