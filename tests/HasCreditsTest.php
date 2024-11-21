@@ -34,7 +34,7 @@ it('prevents negative balance when configured', function () {
 
     $this->user->addCredits(100.00);
 
-    expect(fn () => $this->user->deductCredits(150.00))
+    expect(fn() => $this->user->deductCredits(150.00))
         ->toThrow(InsufficientCreditsException::class);
 });
 
@@ -93,6 +93,19 @@ it('can get balance as of date', function () {
     $balance = $this->user->getBalanceAsOf($pastDate);
 
     expect($balance)->toBe(100.00);
+});
+
+it('can get balance as of timestamp', function () {
+    // Store current time before adding credits
+    $beforeTimestamp = now()->subSeconds(30)->timestamp;
+
+    $this->user->addCredits(100.00);
+
+    $afterTimestamp = now()->addSeconds(30)->timestamp;
+
+    // Test balance at different points in time
+    expect($this->user->getBalanceAsOf($beforeTimestamp))->toBe(0.00)
+        ->and($this->user->getBalanceAsOf($afterTimestamp))->toBe(100.00);
 });
 
 it('maintains accurate running balance', function () {

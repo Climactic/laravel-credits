@@ -11,9 +11,9 @@ return new class extends Migration
         Schema::create('credits', function (Blueprint $table) {
             $table->id();
             $table->morphs('creditable');
-            $table->decimal('amount', 10, config('credits.decimal_precision', 2));
-            $table->decimal('running_balance', 10, config('credits.decimal_precision', 2));
-            $table->string('description', config('credits.description.max_length', 255))->nullable(!config('credits.description.required', false));
+            $table->decimal('amount', 10, 2);
+            $table->decimal('running_balance', 10, 2);
+            $table->string('description', 255)->nullable();
             $table->string('type');
             $table->json('metadata')->nullable();
             $table->timestamps();

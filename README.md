@@ -50,17 +50,8 @@ return [
     // Allow negative balances
     'allow_negative_balance' => false,
     
-    // Decimal precision for credit amounts
-    'decimal_precision' => 2,
-    
-    // Table name for credit transactions (set before running migrations)
+    // Table name for credit transactions (change if you've updated the migration table name)
     'table_name' => 'credits',
-    
-    // Description settings
-    'description' => [
-        'required' => false,
-        'max_length' => 255,
-    ],
 ];
 ```
 
