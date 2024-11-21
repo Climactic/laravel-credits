@@ -34,7 +34,7 @@ it('prevents negative balance when configured', function () {
 
     $this->user->addCredits(100.00);
 
-    expect(fn() => $this->user->deductCredits(150.00))
+    expect(fn () => $this->user->deductCredits(150.00))
         ->toThrow(InsufficientCreditsException::class);
 });
 

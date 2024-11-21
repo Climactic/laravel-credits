@@ -17,11 +17,6 @@ trait HasCredits
 
     /**
      * Add credits to the model.
-     *
-     * @param float $amount
-     * @param string|null $description
-     * @param array $metadata
-     * @return Credit
      */
     public function addCredits(float $amount, ?string $description = null, array $metadata = []): Credit
     {
@@ -39,11 +34,6 @@ trait HasCredits
 
     /**
      * Deduct credits from the model.
-     *
-     * @param float $amount
-     * @param string|null $description
-     * @param array $metadata
-     * @return Credit
      */
     public function deductCredits(float $amount, ?string $description = null, array $metadata = []): Credit
     {
@@ -65,8 +55,6 @@ trait HasCredits
 
     /**
      * Get the current balance of the model.
-     *
-     * @return float
      */
     public function getCurrentBalance(): float
     {
@@ -77,12 +65,6 @@ trait HasCredits
 
     /**
      * Transfer credits from the model to another model.
-     *
-     * @param self $recipient
-     * @param float $amount
-     * @param string|null $description
-     * @param array $metadata
-     * @return array
      */
     public function transferCredits(self $recipient, float $amount, ?string $description = null, array $metadata = []): array
     {
@@ -99,10 +81,6 @@ trait HasCredits
 
     /**
      * Get the transaction history of the model.
-     *
-     * @param int $limit
-     * @param string $order
-     * @return Collection
      */
     public function getTransactionHistory(int $limit = 10, string $order = 'desc'): Collection
     {
@@ -114,9 +92,6 @@ trait HasCredits
 
     /**
      * Check if the model has enough credits.
-     *
-     * @param float $amount
-     * @return bool
      */
     public function hasEnoughCredits(float $amount): bool
     {
@@ -126,8 +101,7 @@ trait HasCredits
     /**
      * Get the balance of the model as of a specific date and time or timestamp.
      *
-     * @param \DateTimeInterface|int $dateTime
-     * @return float
+     * @param  \DateTimeInterface|int  $dateTime
      */
     public function getBalanceAsOf($dateTime): float
     {
