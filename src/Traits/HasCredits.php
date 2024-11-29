@@ -2,14 +2,14 @@
 
 namespace Climactic\Credits\Traits;
 
+use Climactic\Credits\Events\CreditsAdded;
+use Climactic\Credits\Events\CreditsDeducted;
+use Climactic\Credits\Events\CreditsTransferred;
 use Climactic\Credits\Exceptions\InsufficientCreditsException;
 use Climactic\Credits\Models\Credit;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Climactic\Credits\Events\CreditsAdded;
-use Climactic\Credits\Events\CreditsDeducted;
-use Climactic\Credits\Events\CreditsTransferred;
 
 trait HasCredits
 {
