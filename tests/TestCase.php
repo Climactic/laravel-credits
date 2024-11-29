@@ -3,7 +3,6 @@
 namespace Climactic\Credits\Tests;
 
 use Climactic\Credits\CreditsServiceProvider;
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
@@ -38,10 +37,10 @@ class TestCase extends Orchestra
     protected function defineDatabaseMigrations()
     {
         // Include the package migrations
-        include_once __DIR__ . '/../database/migrations/create_credits_table.php.stub';
-        (include __DIR__ . '/../database/migrations/create_credits_table.php.stub')->up();
+        include_once __DIR__.'/../database/migrations/create_credits_table.php.stub';
+        (include __DIR__.'/../database/migrations/create_credits_table.php.stub')->up();
 
         // Include the test migrations
-        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/database/migrations');
     }
 }
