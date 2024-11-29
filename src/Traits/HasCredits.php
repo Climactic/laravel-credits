@@ -7,6 +7,9 @@ use Climactic\Credits\Models\Credit;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Climactic\Credits\Events\CreditsAdded;
+use Climactic\Credits\Events\CreditsDeducted;
+use Climactic\Credits\Events\CreditsTransferred;
 
 trait HasCredits
 {
@@ -28,13 +31,23 @@ trait HasCredits
         $currentBalance = $this->getCurrentBalance();
         $newBalance = $currentBalance + $amount;
 
-        return $this->creditTransactions()->create([
+        $credit = $this->creditTransactions()->create([
             'amount' => $amount,
             'description' => $description,
             'type' => 'credit',
             'metadata' => $metadata,
             'running_balance' => $newBalance,
         ]);
+
+        event(new CreditsAdded(
+            creditable: $this,
+            amount: $amount,
+            newBalance: $newBalance,
+            description: $description,
+            metadata: $metadata
+        ));
+
+        return $credit;
     }
 
     /**
@@ -54,13 +67,23 @@ trait HasCredits
             throw new InsufficientCreditsException($amount, $currentBalance);
         }
 
-        return $this->creditTransactions()->create([
+        $credit = $this->creditTransactions()->create([
             'amount' => $amount,
             'description' => $description,
             'type' => 'debit',
             'metadata' => $metadata,
             'running_balance' => $newBalance,
         ]);
+
+        event(new CreditsDeducted(
+            creditable: $this,
+            amount: $amount,
+            newBalance: $newBalance,
+            description: $description,
+            metadata: $metadata
+        ));
+
+        return $credit;
     }
 
     /**
@@ -86,15 +109,32 @@ trait HasCredits
      */
     public function transferCredits(self $recipient, float $amount, ?string $description = null, array $metadata = []): array
     {
-        DB::transaction(function () use ($recipient, $amount, $description, $metadata) {
+        $result = [];
+
+        DB::transaction(function () use ($recipient, $amount, $description, $metadata, &$result) {
             $this->deductCredits($amount, $description, $metadata);
             $recipient->addCredits($amount, $description, $metadata);
+
+            $senderBalance = $this->getCurrentBalance();
+            $recipientBalance = $recipient->getCurrentBalance();
+
+            event(new CreditsTransferred(
+                sender: $this,
+                recipient: $recipient,
+                amount: $amount,
+                senderNewBalance: $senderBalance,
+                recipientNewBalance: $recipientBalance,
+                description: $description,
+                metadata: $metadata
+            ));
+
+            $result = [
+                'sender_balance' => $senderBalance,
+                'recipient_balance' => $recipientBalance,
+            ];
         });
 
-        return [
-            'sender_balance' => $this->getCurrentBalance(),
-            'recipient_balance' => $recipient->getCurrentBalance(),
-        ];
+        return $result;
     }
 
     /**
