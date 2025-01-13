@@ -1,11 +1,11 @@
 <?php
 
-use Climactic\Credits\Exceptions\InsufficientCreditsException;
-use Climactic\Credits\Tests\TestModels\User;
-use Illuminate\Support\Facades\Event;
 use Climactic\Credits\Events\CreditsAdded;
 use Climactic\Credits\Events\CreditsDeducted;
 use Climactic\Credits\Events\CreditsTransferred;
+use Climactic\Credits\Exceptions\InsufficientCreditsException;
+use Climactic\Credits\Tests\TestModels\User;
+use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
     $this->user = User::create([
@@ -38,7 +38,7 @@ it('prevents negative balance when configured', function () {
 
     $this->user->addCredits(100.00);
 
-    expect(fn() => $this->user->deductCredits(150.00))
+    expect(fn () => $this->user->deductCredits(150.00))
         ->toThrow(InsufficientCreditsException::class);
 });
 
