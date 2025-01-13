@@ -5,6 +5,7 @@ namespace Climactic\Credits\Events;
 class CreditsTransferred
 {
     public function __construct(
+        public int $transactionId,
         public $sender,
         public $recipient,
         public float $amount,

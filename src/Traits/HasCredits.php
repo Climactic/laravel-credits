@@ -36,6 +36,7 @@ trait HasCredits
 
         event(new CreditsAdded(
             creditable: $this,
+            transactionId: $credit->id,
             amount: $amount,
             newBalance: $newBalance,
             description: $description,
@@ -67,6 +68,7 @@ trait HasCredits
 
         event(new CreditsDeducted(
             creditable: $this,
+            transactionId: $credit->id,
             amount: $amount,
             newBalance: $newBalance,
             description: $description,
@@ -93,28 +95,31 @@ trait HasCredits
     {
         $result = [];
 
-        DB::transaction(function () use ($recipient, $amount, $description, $metadata, &$result) {
+        $lastTransaction = DB::transaction(function () use ($recipient, $amount, $description, $metadata, &$result) {
             $this->deductCredits($amount, $description, $metadata);
-            $recipient->addCredits($amount, $description, $metadata);
+            $transaction = $recipient->addCredits($amount, $description, $metadata);
 
             $senderBalance = $this->getCurrentBalance();
             $recipientBalance = $recipient->getCurrentBalance();
-
-            event(new CreditsTransferred(
-                sender: $this,
-                recipient: $recipient,
-                amount: $amount,
-                senderNewBalance: $senderBalance,
-                recipientNewBalance: $recipientBalance,
-                description: $description,
-                metadata: $metadata
-            ));
 
             $result = [
                 'sender_balance' => $senderBalance,
                 'recipient_balance' => $recipientBalance,
             ];
+
+            return $transaction;
         });
+
+        event(new CreditsTransferred(
+            transactionId: $lastTransaction->id,
+            sender: $this,
+            recipient: $recipient,
+            amount: $amount,
+            senderNewBalance: $result['sender_balance'],
+            recipientNewBalance: $result['recipient_balance'],
+            description: $description,
+            metadata: $metadata
+        ));
 
         return $result;
     }

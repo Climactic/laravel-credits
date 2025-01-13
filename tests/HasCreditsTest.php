@@ -2,6 +2,10 @@
 
 use Climactic\Credits\Exceptions\InsufficientCreditsException;
 use Climactic\Credits\Tests\TestModels\User;
+use Illuminate\Support\Facades\Event;
+use Climactic\Credits\Events\CreditsAdded;
+use Climactic\Credits\Events\CreditsDeducted;
+use Climactic\Credits\Events\CreditsTransferred;
 
 beforeEach(function () {
     $this->user = User::create([
@@ -34,7 +38,7 @@ it('prevents negative balance when configured', function () {
 
     $this->user->addCredits(100.00);
 
-    expect(fn () => $this->user->deductCredits(150.00))
+    expect(fn() => $this->user->deductCredits(150.00))
         ->toThrow(InsufficientCreditsException::class);
 });
 
@@ -123,4 +127,61 @@ it('maintains accurate running balance', function () {
     });
 
     expect((float) $this->user->getCurrentBalance())->toEqual(100.00);
+});
+
+it('dispatches event when credits are added', function () {
+    Event::fake();
+
+    $transaction = $this->user->addCredits(100.00, 'Test credit', ['source' => 'test']);
+
+    Event::assertDispatched(CreditsAdded::class, function ($event) use ($transaction) {
+        return $event->creditable->is($this->user)
+            && $event->transactionId === $transaction->id
+            && $event->amount === 100.00
+            && $event->newBalance === 100.00
+            && $event->description === 'Test credit'
+            && $event->metadata === ['source' => 'test'];
+    });
+});
+
+it('dispatches event when credits are deducted', function () {
+    Event::fake();
+
+    $this->user->addCredits(100.00);
+    Event::fake(); // Reset fake after initial credit
+
+    $transaction = $this->user->deductCredits(50.00, 'Test debit', ['reason' => 'purchase']);
+
+    Event::assertDispatched(CreditsDeducted::class, function ($event) use ($transaction) {
+        return $event->creditable->is($this->user)
+            && $event->transactionId === $transaction->id
+            && $event->amount === 50.00
+            && $event->newBalance === 50.00
+            && $event->description === 'Test debit'
+            && $event->metadata === ['reason' => 'purchase'];
+    });
+});
+
+it('dispatches event when credits are transferred', function () {
+    Event::fake();
+
+    $recipient = User::create([
+        'name' => 'Recipient User',
+        'email' => 'recipient.transfer@example.com',
+    ]);
+
+    $this->user->addCredits(100.00);
+    Event::fake(); // Reset fake after initial credit
+
+    $result = $this->user->transferCredits($recipient, 50.00, 'Test transfer', ['type' => 'gift']);
+
+    Event::assertDispatched(CreditsTransferred::class, function ($event) use ($recipient, $result) {
+        return $event->sender->is($this->user)
+            && $event->recipient->is($recipient)
+            && $event->amount === 50.00
+            && $event->senderNewBalance === $result['sender_balance']
+            && $event->recipientNewBalance === $result['recipient_balance']
+            && $event->description === 'Test transfer'
+            && $event->metadata === ['type' => 'gift'];
+    });
 });

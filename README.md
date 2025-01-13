@@ -16,6 +16,7 @@ A ledger-based Laravel package for managing credit-based systems in your applica
 
 - 🔄 Credit transactions
 - 💸 Credit transfers
+- 📢 Events for adding, deducting, and transferring credits
 - 💰 Balance tracking with running balance
 - 📊 Transaction history
 - 🔍 Point-in-time balance lookup
@@ -127,6 +128,16 @@ $metadata = [
 
 $user->addCredits(100.00, 'Purchase', $metadata);
 ```
+
+### Events
+
+Events are fired for each credit transaction, transfer, and balance update.
+
+The events are:
+
+- `CreditsAdded`
+- `CreditsDeducted`
+- `CreditsTransferred`
 
 ## Testing
 
