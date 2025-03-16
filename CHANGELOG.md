@@ -2,6 +2,11 @@
 
 All notable changes to `laravel-credits` will be documented in this file.
 
+## v1.2.0 - 2025-01-13
+
+feat: add transaction IDs to events
+chore: added tests for events
+
 ## v1.1.0 - 2024-11-29
 
 feat: events for credit added, deducted, and transferred.
