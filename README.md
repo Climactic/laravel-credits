@@ -155,13 +155,13 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ## Security Vulnerabilities
 
-Please report security vulnerabilities to [security@climactic.com](mailto:security@climactic.com).
+Please report security vulnerabilities to [security@climactic.co](mailto:security@climactic.co).
 
 ## Sponsors
 
 GitHub Sponsors: [@climactic](https://github.com/sponsors/climactic)
 
-To become a title sponsor, please contact [sponsors@climactic.com](mailto:sponsors@climactic.com).
+To become a title sponsor, please contact [sponsors@climactic.co](mailto:sponsors@climactic.co).
 
 ## License
 
