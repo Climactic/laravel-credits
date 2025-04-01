@@ -2,6 +2,16 @@
 
 All notable changes to `laravel-credits` will be documented in this file.
 
+## v1.2.1 - 2025-04-01
+
+### What's Changed
+
+* chore(deps): bump dependabot/fetch-metadata from 2.2.0 to 2.3.0 by @dependabot in https://github.com/Climactic/laravel-credits/pull/1
+* chore(deps): bump aglipanci/laravel-pint-action from 2.4 to 2.5 by @dependabot in https://github.com/Climactic/laravel-credits/pull/2
+* chore: update dependencies and tests further to support laravel 12
+
+**Full Changelog**: https://github.com/Climactic/laravel-credits/compare/v1.1.1...v1.2.1
+
 ## v1.2.0 - 2025-01-13
 
 feat: add transaction IDs to events
