@@ -166,3 +166,6 @@ To become a title sponsor, please contact [sponsors@climactic.co](mailto:sponsor
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+
+## Disclaimer
+This package is not affiliated with Laravel. It's for Laravel but is not by Laravel. Laravel is a trademark of Taylor Otwell.
