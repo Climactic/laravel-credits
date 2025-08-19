@@ -59,6 +59,16 @@
         "test-coverage": "vendor/bin/pest --coverage",
         "format": "vendor/bin/pint"
     },
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/sponsors/climactic"
+        },
+        {
+            "type": "ko-fi",
+            "url": "https://ko-fi.com/climacticco"
+        }
+    ],
     "config": {
         "sort-packages": true,
         "allow-plugins": {
