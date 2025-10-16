@@ -157,7 +157,7 @@ trait HasCredits
 
         return $this->creditTransactions()
             ->where('created_at', '<=', $dateTime)
-            ->latest()
+            ->latest('id')
             ->value('running_balance') ?? 0.0;
     }
 }

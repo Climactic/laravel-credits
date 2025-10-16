@@ -185,14 +185,56 @@ it('dispatches event when credits are transferred', function () {
             && $event->metadata === ['type' => 'gift'];
     });
 });
-it('returns correct running balance even when multiple transactions share same timestamp', function () {
 
-    // Add credits first
+it('returns correct running balance even when multiple transactions share same timestamp', function () {
+    // This test verifies that getCurrentBalance() uses latest('id') instead of latest('created_at').
+    // When multiple transactions share identical timestamps, ORDER BY created_at is non-deterministic
+    // across different database engines (MySQL, PostgreSQL, etc.). Using latest('id') ensures
+    // consistent, predictable results by sorting on the auto-incrementing primary key.
+
+    $fixedTimestamp = now();
+
+    // Add initial credits
     $this->user->addCredits(100, 'Initial');
 
-    for ($i = 0; $i < 3; $i++) {
-        $this->user->deductCredits(10, 'Loop deduction');
-    }
+    // Create multiple deductions and force them to have the same timestamp
+    // This simulates a scenario where transactions are created in rapid succession
+    $transaction1 = $this->user->deductCredits(10, 'First deduction');
+    $transaction2 = $this->user->deductCredits(10, 'Second deduction');
+    $transaction3 = $this->user->deductCredits(10, 'Third deduction');
 
+    // Force all three transactions to have identical timestamps
+    $transaction1->update(['created_at' => $fixedTimestamp, 'updated_at' => $fixedTimestamp]);
+    $transaction2->update(['created_at' => $fixedTimestamp, 'updated_at' => $fixedTimestamp]);
+    $transaction3->update(['created_at' => $fixedTimestamp, 'updated_at' => $fixedTimestamp]);
+
+    // Verify the transactions have the correct running balances
+    expect((float) $transaction1->running_balance)->toBe(90.0)
+        ->and((float) $transaction2->running_balance)->toBe(80.0)
+        ->and((float) $transaction3->running_balance)->toBe(70.0);
+
+    // getCurrentBalance() should return the most recent transaction by ID (transaction3 with balance 70)
+    // not by timestamp. This ensures deterministic behavior across all database engines.
     expect($this->user->getCurrentBalance())->toBe(70.0);
+});
+
+it('returns correct balance as of date when multiple transactions share same timestamp', function () {
+    // Similar to the previous test, but for getBalanceAsOf()
+    $fixedTimestamp = now();
+
+    // Create multiple transactions with different balances
+    $this->user->addCredits(100, 'Initial');
+    $transaction1 = $this->user->deductCredits(10, 'First deduction');
+    $transaction2 = $this->user->deductCredits(10, 'Second deduction');
+    $transaction3 = $this->user->deductCredits(10, 'Third deduction');
+
+    // Force all deductions to have identical timestamps
+    $transaction1->update(['created_at' => $fixedTimestamp, 'updated_at' => $fixedTimestamp]);
+    $transaction2->update(['created_at' => $fixedTimestamp, 'updated_at' => $fixedTimestamp]);
+    $transaction3->update(['created_at' => $fixedTimestamp, 'updated_at' => $fixedTimestamp]);
+
+    // When querying balance at the fixed timestamp, we should get the latest by ID (transaction3)
+    $balance = $this->user->getBalanceAsOf($fixedTimestamp);
+
+    expect($balance)->toBe(70.0);
 });
