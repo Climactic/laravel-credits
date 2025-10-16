@@ -2,6 +2,18 @@
 
 All notable changes to `laravel-credits` will be documented in this file.
 
+## chore: update dependencies - 2025-10-16
+
+### What's Changed
+
+* chore: upgrade dependencies by @adiologydev in https://github.com/Climactic/laravel-credits/pull/12
+
+### Breaking Change
+
+This release updates illuminate/contracts dependency to ^12.34.0 which now drops support for Laravel 10 and 11. This is a breaking change for users on earlier Laravel versions.
+
+**Full Changelog**: https://github.com/Climactic/laravel-credits/compare/v1.3.0...v1.3.1
+
 ## v1.3.0 - 2025-10-16
 
 ### What's Changed
