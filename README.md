@@ -76,16 +76,16 @@ class User extends Model
 
 ```php
 // Add credits
-$user->addCredits(100.00, 'Subscription Activated');
+$user->creditAdd(100.00, 'Subscription Activated');
 
 // Deduct credits
-$user->deductCredits(50.00, 'Purchase Made');
+$user->creditDeduct(50.00, 'Purchase Made');
 
 // Get current balance
-$balance = $user->getCurrentBalance();
+$balance = $user->creditBalance();
 
 // Check if user has enough credits
-if ($user->hasEnoughCredits(30.00)) {
+if ($user->hasCredits(30.00)) {
     // Proceed with transaction
 }
 ```
@@ -95,17 +95,17 @@ if ($user->hasEnoughCredits(30.00)) {
 Transfer credits between two models:
 
 ```php
-$sender->transferCredits($recipient, 100.00, 'Paying to user for their service');
+$sender->creditTransfer($recipient, 100.00, 'Paying to user for their service');
 ```
 
 ### Transaction History
 
 ```php
 // Get last 10 transactions
-$history = $user->getTransactionHistory();
+$history = $user->creditHistory();
 
 // Get last 20 transactions in ascending order
-$history = $user->getTransactionHistory(20, 'asc');
+$history = $user->creditHistory(20, 'asc');
 ```
 
 ### Historical Balance
@@ -114,7 +114,7 @@ Get balance as of a specific date:
 
 ```php
 $date = new DateTime('2023-01-01');
-$balanceAsOf = $user->getBalanceAsOf($date);
+$balanceAsOf = $user->creditBalanceAt($date);
 ```
 
 ### Metadata
@@ -127,7 +127,7 @@ $metadata = [
     'product' => 'Premium Subscription'
 ];
 
-$user->addCredits(100.00, 'Purchase', $metadata);
+$user->creditAdd(100.00, 'Purchase', $metadata);
 ```
 
 ### Events
@@ -139,6 +139,36 @@ The events are:
 - `CreditsAdded`
 - `CreditsDeducted`
 - `CreditsTransferred`
+
+## API Reference
+
+### Available Methods
+
+| Method | Description |
+|--------|-------------|
+| `creditAdd(float $amount, ?string $description = null, array $metadata = [])` | Add credits to the model |
+| `creditDeduct(float $amount, ?string $description = null, array $metadata = [])` | Deduct credits from the model |
+| `creditBalance()` | Get the current balance |
+| `creditTransfer(Model $recipient, float $amount, ?string $description = null, array $metadata = [])` | Transfer credits to another model |
+| `creditHistory(int $limit = 10, string $order = 'desc')` | Get transaction history |
+| `hasCredits(float $amount)` | Check if model has enough credits |
+| `creditBalanceAt(\DateTimeInterface\|int $dateTime)` | Get balance at a specific point in time |
+| `credits()` | Eloquent relationship to credit transactions |
+
+### Deprecated Methods
+
+The following methods are deprecated and will be removed in v2.0. They still work but will trigger deprecation warnings:
+
+| Deprecated Method | Use Instead |
+|-------------------|-------------|
+| `addCredits()` | `creditAdd()` |
+| `deductCredits()` | `creditDeduct()` |
+| `getCurrentBalance()` | `creditBalance()` |
+| `transferCredits()` | `creditTransfer()` |
+| `getTransactionHistory()` | `creditHistory()` |
+| `hasEnoughCredits()` | `hasCredits()` |
+| `getBalanceAsOf()` | `creditBalanceAt()` |
+| `creditTransactions()` | `credits()` |
 
 ## Testing
 
