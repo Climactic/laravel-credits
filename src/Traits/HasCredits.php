@@ -83,7 +83,7 @@ trait HasCredits
      */
     public function getCurrentBalance(): float
     {
-       // Use latest by ID to ensure correct order even with same timestamps
+        // Use latest by ID to ensure correct order even with same timestamps
         return $this->creditTransactions()
             ->latest('id')
             ->value('running_balance') ?? 0.0;
