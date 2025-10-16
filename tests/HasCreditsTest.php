@@ -185,3 +185,14 @@ it('dispatches event when credits are transferred', function () {
             && $event->metadata === ['type' => 'gift'];
     });
 });
+it('returns correct running balance even when multiple transactions share same timestamp', function () {
+
+    // Add credits first
+    $this->user->addCredits(100, 'Initial');
+
+    for ($i = 0; $i < 3; $i++) {
+        $this->user->deductCredits(10, 'Loop deduction');
+    }
+
+    expect($this->user->getCurrentBalance())->toBe(70.0);
+});
