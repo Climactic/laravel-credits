@@ -234,15 +234,19 @@ it('returns correct running balance even when multiple transactions share same t
 
 it('returns correct balance as of date when multiple transactions share same timestamp', function () {
     // Similar to the previous test, but for creditBalanceAt()
-    $fixedTimestamp = now();
 
     // Create multiple transactions with different balances
-    $this->user->creditAdd(100, 'Initial');
+    $initial = $this->user->creditAdd(100, 'Initial');
     $transaction1 = $this->user->creditDeduct(10, 'First deduction');
     $transaction2 = $this->user->creditDeduct(10, 'Second deduction');
     $transaction3 = $this->user->creditDeduct(10, 'Third deduction');
 
-    // Force all deductions to have identical timestamps
+    // Set a fixed timestamp AFTER all transactions are created
+    $fixedTimestamp = now();
+
+    // Force all transactions (including initial) to have identical timestamps
+    // This ensures creditBalanceAt() must rely on ID ordering
+    $initial->update(['created_at' => $fixedTimestamp, 'updated_at' => $fixedTimestamp]);
     $transaction1->update(['created_at' => $fixedTimestamp, 'updated_at' => $fixedTimestamp]);
     $transaction2->update(['created_at' => $fixedTimestamp, 'updated_at' => $fixedTimestamp]);
     $transaction3->update(['created_at' => $fixedTimestamp, 'updated_at' => $fixedTimestamp]);
