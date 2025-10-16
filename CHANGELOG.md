@@ -2,6 +2,21 @@
 
 All notable changes to `laravel-credits` will be documented in this file.
 
+## v1.3.0 - 2025-10-16
+
+### What's Changed
+
+* Fix: ensure getCurrentBalance uses latest('id') for correct ordering by @Abeni001 in https://github.com/Climactic/laravel-credits/pull/7
+* fix: deterministic queries on getBalanceAsOf by @adiologydev in https://github.com/Climactic/laravel-credits/pull/8
+* refactor: rename methods for consistency and deprecate old ones by @adiologydev in https://github.com/Climactic/laravel-credits/pull/9
+* Add DB locking, input validation, and post-commit event dispatch by @adiologydev in https://github.com/Climactic/laravel-credits/pull/10
+
+### New Contributors
+
+* @Abeni001 made their first contribution in https://github.com/Climactic/laravel-credits/pull/7
+
+**Full Changelog**: https://github.com/Climactic/laravel-credits/compare/v1.2.2...v1.3.0
+
 ## v1.2.2 - 2025-08-19
 
 ### What's Changed
