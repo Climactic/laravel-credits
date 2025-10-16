@@ -37,10 +37,11 @@ trait HasCredits
     /**
      * Create a credit transaction for the model, update its running balance, and dispatch a CreditsAdded event.
      *
-     * @param float $amount The amount to add; must be greater than 0.
-     * @param string|null $description Optional human-readable description for the transaction.
-     * @param array $metadata Optional arbitrary metadata stored with the transaction.
+     * @param  float  $amount  The amount to add; must be greater than 0.
+     * @param  string|null  $description  Optional human-readable description for the transaction.
+     * @param  array  $metadata  Optional arbitrary metadata stored with the transaction.
      * @return \Climactic\Credits\Models\Credit The created Credit record with the updated running balance.
+     *
      * @throws \InvalidArgumentException If $amount is not greater than 0.
      */
     public function creditAdd(float $amount, ?string $description = null, array $metadata = []): Credit
@@ -92,10 +93,11 @@ trait HasCredits
     /**
      * Deducts credits from the model and records a debit transaction.
      *
-     * @param float $amount The amount to deduct; must be greater than 0.
-     * @param string|null $description Optional description for the transaction.
-     * @param array $metadata Optional metadata to attach to the transaction.
+     * @param  float  $amount  The amount to deduct; must be greater than 0.
+     * @param  string|null  $description  Optional description for the transaction.
+     * @param  array  $metadata  Optional metadata to attach to the transaction.
      * @return Credit The created Credit record representing the debit and its resulting running balance.
+     *
      * @throws \InvalidArgumentException If $amount is not greater than 0.
      * @throws InsufficientCreditsException If negative balances are disallowed and the model has insufficient credits.
      */
@@ -181,10 +183,10 @@ trait HasCredits
      * row locking and retry (up to 5 attempts) to prevent deadlocks when concurrent
      * transfers occur in opposite directions.
      *
-     * @param self $recipient The model receiving the credits.
-     * @param float $amount The amount of credits to transfer (must be greater than zero).
-     * @param string|null $description Optional human-readable description for the transaction.
-     * @param array $metadata Optional arbitrary metadata to attach to the transaction.
+     * @param  self  $recipient  The model receiving the credits.
+     * @param  float  $amount  The amount of credits to transfer (must be greater than zero).
+     * @param  string|null  $description  Optional human-readable description for the transaction.
+     * @param  array  $metadata  Optional arbitrary metadata to attach to the transaction.
      * @return array{
      *     sender_balance: float,
      *     recipient_balance: float
@@ -256,8 +258,8 @@ trait HasCredits
      * The `$order` parameter is normalized to `'asc'` or `'desc'` (defaults to `'desc'` if invalid).
      * The `$limit` parameter is clamped to the range 1..1000.
      *
-     * @param int $limit Maximum number of records to return (clamped to 1..1000).
-     * @param string $order Sort direction, either `'asc'` or `'desc'` (invalid values default to `'desc'`).
+     * @param  int  $limit  Maximum number of records to return (clamped to 1..1000).
+     * @param  string  $order  Sort direction, either `'asc'` or `'desc'` (invalid values default to `'desc'`).
      * @return \Illuminate\Database\Eloquent\Collection|EloquentCollection A collection of Credit records matching the query.
      */
     public function creditHistory(int $limit = 10, string $order = 'desc'): EloquentCollection
@@ -279,13 +281,14 @@ trait HasCredits
     }
 
     /**
-         * Retrieve the model's credit transaction history.
-         *
-         * @param int $limit Maximum number of records to return (clamped to 1..1000).
-         * @param string $order Sort direction, either 'asc' or 'desc' (defaults to 'desc').
-         * @return \Illuminate\Database\Eloquent\Collection Collection of Credit records.
-         * @deprecated Use creditHistory() instead. Will be removed in v2.0.
-         */
+     * Retrieve the model's credit transaction history.
+     *
+     * @param  int  $limit  Maximum number of records to return (clamped to 1..1000).
+     * @param  string  $order  Sort direction, either 'asc' or 'desc' (defaults to 'desc').
+     * @return \Illuminate\Database\Eloquent\Collection Collection of Credit records.
+     *
+     * @deprecated Use creditHistory() instead. Will be removed in v2.0.
+     */
     public function getTransactionHistory(int $limit = 10, string $order = 'desc'): EloquentCollection
     {
         trigger_error('Method getTransactionHistory() is deprecated. Use creditHistory() instead.', E_USER_DEPRECATED);
@@ -318,7 +321,7 @@ trait HasCredits
      *
      * Accepts a DateTimeInterface or an integer Unix timestamp (seconds or milliseconds; milliseconds are auto-detected).
      *
-     * @param \DateTimeInterface|int $dateTime The target date/time or Unix timestamp to query the balance at.
+     * @param  \DateTimeInterface|int  $dateTime  The target date/time or Unix timestamp to query the balance at.
      * @return float The running balance at or before the specified date/time, or 0.0 if no transactions exist.
      */
     public function creditBalanceAt($dateTime): float
