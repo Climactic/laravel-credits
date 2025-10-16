@@ -51,11 +51,21 @@ php artisan vendor:publish --tag="credits-config"
 return [
     // Allow negative balances
     'allow_negative_balance' => false,
-    
+
     // Table name for credit transactions (change if you've updated the migration table name)
     'table_name' => 'credits',
 ];
 ```
+
+### Database Recommendations
+
+**Concurrency & Locking**: This package uses row-level locking (`SELECT FOR UPDATE`) to prevent race conditions during concurrent credit operations. This requires a database engine that supports proper transaction isolation and row-level locking:
+
+- ✅ **MySQL/MariaDB**: Requires InnoDB engine (default in modern versions)
+- ✅ **PostgreSQL**: Full support for row-level locking
+- ⚠️ **SQLite**: Row-level locking is ignored; concurrent operations may produce incorrect results in high-concurrency scenarios
+
+For production environments with concurrent users, we recommend using MySQL/MariaDB (InnoDB) or PostgreSQL.
 
 ## Usage
 
@@ -144,31 +154,31 @@ The events are:
 
 ### Available Methods
 
-| Method | Description |
-|--------|-------------|
-| `creditAdd(float $amount, ?string $description = null, array $metadata = [])` | Add credits to the model |
-| `creditDeduct(float $amount, ?string $description = null, array $metadata = [])` | Deduct credits from the model |
-| `creditBalance()` | Get the current balance |
-| `creditTransfer(Model $recipient, float $amount, ?string $description = null, array $metadata = [])` | Transfer credits to another model |
-| `creditHistory(int $limit = 10, string $order = 'desc')` | Get transaction history |
-| `hasCredits(float $amount)` | Check if model has enough credits |
-| `creditBalanceAt(Carbon\|DateTimeInterface\|int $dateTime)` | Get balance at a specific time |
-| `credits()` | Eloquent relationship to credit transactions |
+| Method                                                                                               | Description                                  |
+| ---------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `creditAdd(float $amount, ?string $description = null, array $metadata = [])`                        | Add credits to the model                     |
+| `creditDeduct(float $amount, ?string $description = null, array $metadata = [])`                     | Deduct credits from the model                |
+| `creditBalance()`                                                                                    | Get the current balance                      |
+| `creditTransfer(Model $recipient, float $amount, ?string $description = null, array $metadata = [])` | Transfer credits to another model            |
+| `creditHistory(int $limit = 10, string $order = 'desc')`                                             | Get transaction history                      |
+| `hasCredits(float $amount)`                                                                          | Check if model has enough credits            |
+| `creditBalanceAt(Carbon\|DateTimeInterface\|int $dateTime)`                                          | Get balance at a specific time               |
+| `credits()`                                                                                          | Eloquent relationship to credit transactions |
 
 ### Deprecated Methods
 
 The following methods are deprecated and will be removed in v2.0. They still work but will trigger deprecation warnings:
 
-| Deprecated Method | Use Instead |
-|-------------------|-------------|
-| `addCredits()` | `creditAdd()` |
-| `deductCredits()` | `creditDeduct()` |
-| `getCurrentBalance()` | `creditBalance()` |
-| `transferCredits()` | `creditTransfer()` |
-| `getTransactionHistory()` | `creditHistory()` |
-| `hasEnoughCredits()` | `hasCredits()` |
-| `getBalanceAsOf()` | `creditBalanceAt()` |
-| `creditTransactions()` | `credits()` |
+| Deprecated Method         | Use Instead         |
+| ------------------------- | ------------------- |
+| `addCredits()`            | `creditAdd()`       |
+| `deductCredits()`         | `creditDeduct()`    |
+| `getCurrentBalance()`     | `creditBalance()`   |
+| `transferCredits()`       | `creditTransfer()`  |
+| `getTransactionHistory()` | `creditHistory()`   |
+| `hasEnoughCredits()`      | `hasCredits()`      |
+| `getBalanceAsOf()`        | `creditBalanceAt()` |
+| `creditTransactions()`    | `credits()`         |
 
 ## Testing
 

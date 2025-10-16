@@ -36,9 +36,15 @@ trait HasCredits
 
     /**
      * Add credits to the model.
+     *
+     * @throws \InvalidArgumentException If amount is not greater than 0
      */
     public function creditAdd(float $amount, ?string $description = null, array $metadata = []): Credit
     {
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Amount must be greater than 0.');
+        }
+
         return DB::transaction(function () use ($amount, $description, $metadata) {
             $lastBalance = (float) ($this->credits()
                 ->lockForUpdate()
@@ -64,7 +70,7 @@ trait HasCredits
             ));
 
             return $credit;
-        });
+        }, 5); // Retry up to 5 times on deadlock/transient errors
     }
 
     /**
@@ -81,9 +87,16 @@ trait HasCredits
 
     /**
      * Deduct credits from the model.
+     *
+     * @throws \InvalidArgumentException If amount is not greater than 0
+     * @throws InsufficientCreditsException If insufficient credits and negative balance not allowed
      */
     public function creditDeduct(float $amount, ?string $description = null, array $metadata = []): Credit
     {
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Amount must be greater than 0.');
+        }
+
         return DB::transaction(function () use ($amount, $description, $metadata) {
             $lastBalance = (float) ($this->credits()
                 ->lockForUpdate()
@@ -113,7 +126,7 @@ trait HasCredits
             ));
 
             return $credit;
-        });
+        }, 5); // Retry up to 5 times on deadlock/transient errors
     }
 
     /**
@@ -153,12 +166,33 @@ trait HasCredits
 
     /**
      * Transfer credits from the model to another model.
+     *
+     * This method implements deadlock prevention by:
+     * 1. Acquiring locks in deterministic order (by model ID)
+     * 2. Using transaction retry logic (up to 5 attempts)
+     *
+     * This prevents deadlocks when two transfers occur simultaneously
+     * in opposite directions (A→B and B→A).
      */
     public function creditTransfer(self $recipient, float $amount, ?string $description = null, array $metadata = []): array
     {
         $result = [];
 
         $lastTransaction = DB::transaction(function () use ($recipient, $amount, $description, $metadata, &$result) {
+            // Pre-lock both models in deterministic order to prevent deadlocks
+            // Sort by model type first, then by ID to ensure consistent lock acquisition order
+            $models = collect([$this, $recipient])
+                ->sortBy(function ($model) {
+                    return [get_class($model), $model->getKey()];
+                })
+                ->values();
+
+            // Acquire locks in deterministic order
+            foreach ($models as $model) {
+                $model->credits()->lockForUpdate()->latest('id')->value('running_balance');
+            }
+
+            // Now perform the actual transfer operations
             $this->creditDeduct($amount, $description, $metadata);
             $transaction = $recipient->creditAdd($amount, $description, $metadata);
 
@@ -171,7 +205,7 @@ trait HasCredits
             ];
 
             return $transaction;
-        });
+        }, 5); // Retry up to 5 times on deadlock
 
         event(new CreditsTransferred(
             transactionId: $lastTransaction->id,
@@ -215,6 +249,7 @@ trait HasCredits
 
         return $this->credits()
             ->orderBy('created_at', $order)
+            ->orderBy('id', $order) // Tie-break on ID for deterministic ordering
             ->limit($limit)
             ->get();
     }
@@ -254,11 +289,15 @@ trait HasCredits
     /**
      * Get the balance of the model as of a specific date and time or timestamp.
      *
-     * @param  \DateTimeInterface|int  $dateTime
+     * @param  \DateTimeInterface|int  $dateTime  Unix timestamp in seconds (or milliseconds, auto-detected)
      */
     public function creditBalanceAt($dateTime): float
     {
         if (is_int($dateTime)) {
+            // Auto-detect millisecond timestamps (values > 9999999999 are likely milliseconds)
+            if ($dateTime > 9999999999) {
+                $dateTime = (int) floor($dateTime / 1000);
+            }
             $dateTime = Carbon::createFromTimestamp($dateTime);
         } elseif ($dateTime instanceof \DateTimeInterface) {
             $dateTime = Carbon::instance($dateTime);

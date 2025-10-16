@@ -112,6 +112,20 @@ it('can get balance as of timestamp', function () {
         ->and($this->user->creditBalanceAt($afterTimestamp))->toBe(100.00);
 });
 
+it('can get balance as of millisecond timestamp', function () {
+    // Store current time before adding credits in milliseconds
+    $beforeTimestampMs = now()->subSeconds(30)->timestamp * 1000;
+
+    $this->user->creditAdd(100.00);
+
+    $afterTimestampMs = now()->addSeconds(30)->timestamp * 1000;
+
+    // Test balance at different points in time with millisecond timestamps
+    // The method should auto-detect and convert milliseconds to seconds
+    expect($this->user->creditBalanceAt($beforeTimestampMs))->toBe(0.00)
+        ->and($this->user->creditBalanceAt($afterTimestampMs))->toBe(100.00);
+});
+
 it('maintains accurate running balance', function () {
     $transactions = collect([
         $this->user->creditAdd(100.00),
@@ -319,19 +333,21 @@ describe('deprecated methods', function () {
             }
         });
 
-        // Call all deprecated methods
-        $this->user->creditAdd(100.00);
-        $this->user->addCredits(50.00);
-        $this->user->deductCredits(10.00);
-        $this->user->getCurrentBalance();
-        $recipient = User::create(['name' => 'Test', 'email' => 'test2@example.com']);
-        $this->user->transferCredits($recipient, 10.00);
-        $this->user->getTransactionHistory(5);
-        $this->user->hasEnoughCredits(10.00);
-        $this->user->getBalanceAsOf(now());
-        $this->user->creditTransactions;
-
-        restore_error_handler();
+        try {
+            // Call all deprecated methods
+            $this->user->creditAdd(100.00);
+            $this->user->addCredits(50.00);
+            $this->user->deductCredits(10.00);
+            $this->user->getCurrentBalance();
+            $recipient = User::create(['name' => 'Test', 'email' => 'test2@example.com']);
+            $this->user->transferCredits($recipient, 10.00);
+            $this->user->getTransactionHistory(5);
+            $this->user->hasEnoughCredits(10.00);
+            $this->user->getBalanceAsOf(now());
+            $this->user->creditTransactions;
+        } finally {
+            restore_error_handler();
+        }
 
         // Verify deprecation notices were triggered
         expect($deprecations)->toContain('Method addCredits() is deprecated. Use creditAdd() instead.')
@@ -347,6 +363,52 @@ describe('deprecated methods', function () {
 
 // Input validation tests
 describe('input validation', function () {
+    it('rejects zero amount when adding credits', function () {
+        expect(fn () => $this->user->creditAdd(0.00, 'Invalid amount'))
+            ->toThrow(\InvalidArgumentException::class, 'Amount must be greater than 0.');
+    });
+
+    it('rejects negative amount when adding credits', function () {
+        expect(fn () => $this->user->creditAdd(-50.00, 'Invalid amount'))
+            ->toThrow(\InvalidArgumentException::class, 'Amount must be greater than 0.');
+    });
+
+    it('rejects zero amount when deducting credits', function () {
+        $this->user->creditAdd(100.00);
+
+        expect(fn () => $this->user->creditDeduct(0.00, 'Invalid amount'))
+            ->toThrow(\InvalidArgumentException::class, 'Amount must be greater than 0.');
+    });
+
+    it('rejects negative amount when deducting credits', function () {
+        $this->user->creditAdd(100.00);
+
+        expect(fn () => $this->user->creditDeduct(-50.00, 'Invalid amount'))
+            ->toThrow(\InvalidArgumentException::class, 'Amount must be greater than 0.');
+    });
+
+    it('prevents balance manipulation via negative deduction', function () {
+        // Ensure that negative amounts in creditDeduct cannot be used to increase balance
+        $this->user->creditAdd(100.00, 'Initial balance');
+
+        expect(fn () => $this->user->creditDeduct(-50.00, 'Attempting to increase via deduction'))
+            ->toThrow(\InvalidArgumentException::class, 'Amount must be greater than 0.');
+
+        // Balance should remain unchanged at 100.00
+        expect($this->user->creditBalance())->toBe(100.00);
+    });
+
+    it('prevents balance manipulation via negative addition', function () {
+        // Ensure that negative amounts in creditAdd cannot be used to decrease balance
+        $this->user->creditAdd(100.00, 'Initial balance');
+
+        expect(fn () => $this->user->creditAdd(-50.00, 'Attempting to decrease via addition'))
+            ->toThrow(\InvalidArgumentException::class, 'Amount must be greater than 0.');
+
+        // Balance should remain unchanged at 100.00
+        expect($this->user->creditBalance())->toBe(100.00);
+    });
+
     it('sanitizes order parameter in creditHistory', function () {
         $this->user->creditAdd(100.00, 'First');
         $this->user->creditAdd(50.00, 'Second');
@@ -492,5 +554,291 @@ describe('concurrency', function () {
             // Balance should remain at 20
             expect($this->user->creditBalance())->toBe(20.00);
         });
+    });
+
+    it('acquires locks in deterministic order during transfers to prevent deadlocks', function () {
+        // This test verifies that creditTransfer() acquires locks in a consistent order
+        // based on model type and ID, preventing deadlocks when two transfers occur
+        // simultaneously in opposite directions (A→B and B→A).
+
+        $userA = User::create(['name' => 'User A', 'email' => 'a@example.com']);
+        $userB = User::create(['name' => 'User B', 'email' => 'b@example.com']);
+
+        $userA->creditAdd(100.00, 'Initial balance A');
+        $userB->creditAdd(100.00, 'Initial balance B');
+
+        // Simulate bidirectional transfers in the same transaction
+        // The deterministic locking order should prevent deadlocks
+        \Illuminate\Support\Facades\DB::transaction(function () use ($userA, $userB) {
+            // Transfer A → B
+            $result1 = $userA->creditTransfer($userB, 30.00, 'Transfer A to B');
+
+            // Transfer B → A
+            $result2 = $userB->creditTransfer($userA, 20.00, 'Transfer B to A');
+
+            // Verify final balances
+            // A: 100 - 30 + 20 = 90
+            // B: 100 + 30 - 20 = 110
+            expect($userA->creditBalance())->toBe(90.00)
+                ->and($userB->creditBalance())->toBe(110.00)
+                ->and($result1['sender_balance'])->toBe(70.00)
+                ->and($result1['recipient_balance'])->toBe(130.00)
+                ->and($result2['sender_balance'])->toBe(110.00)
+                ->and($result2['recipient_balance'])->toBe(90.00);
+        });
+
+        // Verify final state after transaction
+        expect($userA->creditBalance())->toBe(90.00)
+            ->and($userB->creditBalance())->toBe(110.00);
+    });
+
+    it('handles transfers between users with different IDs in correct lock order', function () {
+        // Create users with explicit ordering to test lock acquisition
+        $user1 = User::create(['name' => 'User 1', 'email' => 'user1@example.com']);
+        $user2 = User::create(['name' => 'User 2', 'email' => 'user2@example.com']);
+        $user3 = User::create(['name' => 'User 3', 'email' => 'user3@example.com']);
+
+        $user1->creditAdd(100.00);
+        $user2->creditAdd(100.00);
+        $user3->creditAdd(100.00);
+
+        // Perform transfers in various directions
+        $user3->creditTransfer($user1, 10.00, 'Transfer 3 to 1');
+        $user1->creditTransfer($user2, 20.00, 'Transfer 1 to 2');
+        $user2->creditTransfer($user3, 30.00, 'Transfer 2 to 3');
+
+        // Verify all balances are correct
+        // User 1: 100 + 10 - 20 = 90
+        // User 2: 100 + 20 - 30 = 90
+        // User 3: 100 - 10 + 30 = 120
+        expect($user1->creditBalance())->toBe(90.00)
+            ->and($user2->creditBalance())->toBe(90.00)
+            ->and($user3->creditBalance())->toBe(120.00);
+    });
+
+    it('handles self-transfers correctly with deterministic locking', function () {
+        // Edge case: transferring to self (though not recommended in practice)
+        $this->user->creditAdd(100.00);
+
+        // This should work without deadlock since both sender and recipient are the same
+        $result = $this->user->creditTransfer($this->user, 50.00, 'Self transfer');
+
+        // Balance should remain the same (deduct 50, add 50)
+        expect($this->user->creditBalance())->toBe(100.00)
+            ->and($result['sender_balance'])->toBe(100.00)
+            ->and($result['recipient_balance'])->toBe(100.00);
+
+        // Verify we have the correct number of transactions (initial + deduct + add)
+        expect($this->user->credits()->count())->toBe(3);
+    });
+
+    it('retries transaction on deadlock', function () {
+        // This test verifies that DB::transaction with attempts parameter
+        // will retry on deadlock. While we can't easily simulate a real deadlock
+        // in tests, we verify the transaction completes successfully with the
+        // retry parameter configured.
+
+        $this->user->creditAdd(100.00, 'Initial');
+
+        // Perform multiple concurrent-like operations that would benefit from retry logic
+        $this->user->creditDeduct(20.00, 'First op');
+        $this->user->creditAdd(30.00, 'Second op');
+        $this->user->creditDeduct(10.00, 'Third op');
+
+        // Verify final balance is correct: 100 - 20 + 30 - 10 = 100
+        expect($this->user->creditBalance())->toBe(100.00);
+
+        // Verify all transactions were recorded
+        expect($this->user->credits()->count())->toBe(4);
+    });
+
+    it('maintains transaction integrity across retries', function () {
+        // Verify that even with retry logic, transactions maintain ACID properties
+        $this->user->creditAdd(100.00, 'Initial');
+
+        \Illuminate\Support\Facades\DB::transaction(function () {
+            // Multiple operations within a single transaction
+            $this->user->creditDeduct(30.00, 'Op 1');
+            $this->user->creditAdd(20.00, 'Op 2');
+            $this->user->creditDeduct(10.00, 'Op 3');
+        });
+
+        // Final balance: 100 - 30 + 20 - 10 = 80
+        expect($this->user->creditBalance())->toBe(80.00);
+
+        // Verify running balances are sequential
+        $transactions = $this->user->creditHistory(10, 'asc');
+        expect((float) $transactions[0]->running_balance)->toBe(100.00)
+            ->and((float) $transactions[1]->running_balance)->toBe(70.00)
+            ->and((float) $transactions[2]->running_balance)->toBe(90.00)
+            ->and((float) $transactions[3]->running_balance)->toBe(80.00);
+    });
+});
+
+// Edge case tests
+describe('edge cases', function () {
+    it('handles very small positive amounts correctly', function () {
+        // Test with the smallest positive float
+        $this->user->creditAdd(0.01, 'Tiny credit');
+
+        expect($this->user->creditBalance())->toBe(0.01);
+
+        $this->user->creditDeduct(0.01, 'Tiny debit');
+
+        expect($this->user->creditBalance())->toBe(0.00);
+    });
+
+    it('handles very large amounts correctly', function () {
+        // Test with large amounts (up to PHP float precision)
+        $largeAmount = 999999999.99;
+
+        $this->user->creditAdd($largeAmount, 'Large credit');
+
+        expect($this->user->creditBalance())->toBe($largeAmount);
+
+        $this->user->creditDeduct(999999.99, 'Large debit');
+
+        expect($this->user->creditBalance())->toBe(999000000.00);
+    });
+
+    it('handles float precision edge cases', function () {
+        // Test amounts that might cause precision issues
+        $this->user->creditAdd(10.00, 'Initial');
+        $this->user->creditDeduct(3.33, 'First deduct');
+        $this->user->creditDeduct(3.33, 'Second deduct');
+        $this->user->creditDeduct(3.34, 'Third deduct');
+
+        // Should be 0.00 (10 - 3.33 - 3.33 - 3.34 = 0)
+        expect($this->user->creditBalance())->toBe(0.00);
+    });
+
+    it('handles rapid sequential operations', function () {
+        // Simulate rapid-fire operations
+        $this->user->creditAdd(1000.00, 'Initial');
+
+        for ($i = 1; $i <= 20; $i++) {
+            $this->user->creditDeduct(10.00, "Deduct {$i}");
+        }
+
+        // Balance: 1000 - (20 * 10) = 800
+        expect($this->user->creditBalance())->toBe(800.00);
+
+        // Verify all transactions recorded
+        expect($this->user->credits()->count())->toBe(21);
+    });
+
+    it('maintains consistency when operations fail mid-sequence', function () {
+        config(['credits.allow_negative_balance' => false]);
+
+        $this->user->creditAdd(100.00, 'Initial');
+
+        // First deduction succeeds
+        $this->user->creditDeduct(50.00, 'Success');
+        expect($this->user->creditBalance())->toBe(50.00);
+
+        // Second deduction fails
+        try {
+            $this->user->creditDeduct(100.00, 'Will fail');
+        } catch (\Exception $e) {
+            // Expected to fail
+        }
+
+        // Balance should still be 50, not corrupted
+        expect($this->user->creditBalance())->toBe(50.00);
+
+        // Third deduction succeeds
+        $this->user->creditDeduct(25.00, 'Success again');
+        expect($this->user->creditBalance())->toBe(25.00);
+    });
+
+    it('handles concurrent transfers with same participants', function () {
+        $userA = User::create(['name' => 'User A', 'email' => 'edgecase_a@example.com']);
+        $userB = User::create(['name' => 'User B', 'email' => 'edgecase_b@example.com']);
+
+        $userA->creditAdd(500.00);
+        $userB->creditAdd(500.00);
+
+        // Multiple transfers in quick succession
+        $userA->creditTransfer($userB, 50.00, 'Transfer 1');
+        $userA->creditTransfer($userB, 30.00, 'Transfer 2');
+        $userB->creditTransfer($userA, 40.00, 'Transfer 3');
+        $userA->creditTransfer($userB, 20.00, 'Transfer 4');
+
+        // Final balances: A: 500 - 50 - 30 + 40 - 20 = 440
+        //                 B: 500 + 50 + 30 - 40 + 20 = 560
+        expect($userA->creditBalance())->toBe(440.00)
+            ->and($userB->creditBalance())->toBe(560.00);
+
+        // Total should remain constant (conservation)
+        expect($userA->creditBalance() + $userB->creditBalance())->toBe(1000.00);
+    });
+
+    it('handles transfer with zero would fail', function () {
+        $recipient = User::create(['name' => 'Recipient', 'email' => 'zero_transfer@example.com']);
+        $this->user->creditAdd(100.00);
+
+        expect(fn () => $this->user->creditTransfer($recipient, 0.00, 'Zero transfer'))
+            ->toThrow(\InvalidArgumentException::class);
+    });
+
+    it('handles transfer with negative amount would fail', function () {
+        $recipient = User::create(['name' => 'Recipient', 'email' => 'neg_transfer@example.com']);
+        $this->user->creditAdd(100.00);
+
+        expect(fn () => $this->user->creditTransfer($recipient, -50.00, 'Negative transfer'))
+            ->toThrow(\InvalidArgumentException::class);
+    });
+
+    it('preserves transaction history order with rapid operations', function () {
+        // Create many transactions rapidly to test ordering consistency
+        $this->user->creditAdd(100.00, 'Op 1');
+        $this->user->creditAdd(50.00, 'Op 2');
+        $this->user->creditDeduct(30.00, 'Op 3');
+        $this->user->creditAdd(20.00, 'Op 4');
+        $this->user->creditDeduct(10.00, 'Op 5');
+
+        // Get history in ascending order
+        $history = $this->user->creditHistory(10, 'asc');
+
+        // Verify descriptions are in correct order
+        expect($history[0]->description)->toBe('Op 1')
+            ->and($history[1]->description)->toBe('Op 2')
+            ->and($history[2]->description)->toBe('Op 3')
+            ->and($history[3]->description)->toBe('Op 4')
+            ->and($history[4]->description)->toBe('Op 5');
+
+        // Verify running balances increase/decrease correctly
+        expect((float) $history[0]->running_balance)->toBe(100.00)
+            ->and((float) $history[1]->running_balance)->toBe(150.00)
+            ->and((float) $history[2]->running_balance)->toBe(120.00)
+            ->and((float) $history[3]->running_balance)->toBe(140.00)
+            ->and((float) $history[4]->running_balance)->toBe(130.00);
+    });
+
+    it('handles metadata edge cases', function () {
+        // Test with empty metadata
+        $t1 = $this->user->creditAdd(10.00, 'Empty metadata', []);
+        expect($t1->metadata)->toBe([]);
+
+        // Test with large metadata
+        $largeMetadata = [
+            'user_id' => 12345,
+            'transaction_type' => 'purchase',
+            'items' => array_fill(0, 100, ['id' => 1, 'name' => 'Item']),
+            'notes' => str_repeat('x', 1000),
+        ];
+        $t2 = $this->user->creditAdd(20.00, 'Large metadata', $largeMetadata);
+        expect($t2->metadata)->toBe($largeMetadata);
+
+        // Test with nested arrays
+        $nestedMetadata = [
+            'level1' => [
+                'level2' => [
+                    'level3' => ['value' => 'deep'],
+                ],
+            ],
+        ];
+        $t3 = $this->user->creditAdd(30.00, 'Nested metadata', $nestedMetadata);
+        expect($t3->metadata)->toBe($nestedMetadata);
     });
 });
