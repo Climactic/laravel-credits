@@ -2,7 +2,9 @@
 
 namespace Climactic\Credits\Events;
 
-class CreditsDeducted
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
+
+class CreditsDeducted implements ShouldDispatchAfterCommit
 {
     public function __construct(
         public $creditable,

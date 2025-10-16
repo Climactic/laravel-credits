@@ -152,7 +152,7 @@ The events are:
 | `creditTransfer(Model $recipient, float $amount, ?string $description = null, array $metadata = [])` | Transfer credits to another model |
 | `creditHistory(int $limit = 10, string $order = 'desc')` | Get transaction history |
 | `hasCredits(float $amount)` | Check if model has enough credits |
-| `creditBalanceAt(\DateTimeInterface\|int $dateTime)` | Get balance at a specific point in time |
+| `creditBalanceAt(Carbon\|DateTimeInterface\|int $dateTime)` | Get balance at a specific time |
 | `credits()` | Eloquent relationship to credit transactions |
 
 ### Deprecated Methods

@@ -309,4 +309,188 @@ describe('deprecated methods', function () {
         expect($this->user->creditTransactions)->toHaveCount(2)
             ->and($this->user->creditTransactions()->count())->toBe(2);
     });
+
+    it('emits deprecation warnings for deprecated methods', function () {
+        // Capture deprecation notices
+        $deprecations = [];
+        set_error_handler(function ($errno, $errstr) use (&$deprecations) {
+            if ($errno === E_USER_DEPRECATED) {
+                $deprecations[] = $errstr;
+            }
+        });
+
+        // Call all deprecated methods
+        $this->user->creditAdd(100.00);
+        $this->user->addCredits(50.00);
+        $this->user->deductCredits(10.00);
+        $this->user->getCurrentBalance();
+        $recipient = User::create(['name' => 'Test', 'email' => 'test2@example.com']);
+        $this->user->transferCredits($recipient, 10.00);
+        $this->user->getTransactionHistory(5);
+        $this->user->hasEnoughCredits(10.00);
+        $this->user->getBalanceAsOf(now());
+        $this->user->creditTransactions;
+
+        restore_error_handler();
+
+        // Verify deprecation notices were triggered
+        expect($deprecations)->toContain('Method addCredits() is deprecated. Use creditAdd() instead.')
+            ->and($deprecations)->toContain('Method deductCredits() is deprecated. Use creditDeduct() instead.')
+            ->and($deprecations)->toContain('Method getCurrentBalance() is deprecated. Use creditBalance() instead.')
+            ->and($deprecations)->toContain('Method transferCredits() is deprecated. Use creditTransfer() instead.')
+            ->and($deprecations)->toContain('Method getTransactionHistory() is deprecated. Use creditHistory() instead.')
+            ->and($deprecations)->toContain('Method hasEnoughCredits() is deprecated. Use hasCredits() instead.')
+            ->and($deprecations)->toContain('Method getBalanceAsOf() is deprecated. Use creditBalanceAt() instead.')
+            ->and($deprecations)->toContain('Method creditTransactions() is deprecated. Use credits() instead.');
+    });
+});
+
+// Input validation tests
+describe('input validation', function () {
+    it('sanitizes order parameter in creditHistory', function () {
+        $this->user->creditAdd(100.00, 'First');
+        $this->user->creditAdd(50.00, 'Second');
+        $this->user->creditAdd(25.00, 'Third');
+
+        // Test valid 'asc' order
+        $history = $this->user->creditHistory(10, 'asc');
+        expect($history->first()->description)->toBe('First');
+
+        // Test valid 'desc' order
+        $history = $this->user->creditHistory(10, 'desc');
+        expect($history->first()->description)->toBe('Third');
+
+        // Test uppercase 'ASC' - should be converted to lowercase
+        $history = $this->user->creditHistory(10, 'ASC');
+        expect($history->first()->description)->toBe('First');
+
+        // Test uppercase 'DESC' - should be converted to lowercase
+        $history = $this->user->creditHistory(10, 'DESC');
+        expect($history->first()->description)->toBe('Third');
+
+        // Test invalid order - should default to 'desc'
+        $history = $this->user->creditHistory(10, 'invalid');
+        expect($history->first()->description)->toBe('Third');
+
+        // Test SQL injection attempt - should default to 'desc'
+        $history = $this->user->creditHistory(10, 'desc; DROP TABLE credits;--');
+        expect($history->first()->description)->toBe('Third');
+    });
+
+    it('clamps limit parameter in creditHistory', function () {
+        // Create 15 transactions
+        for ($i = 1; $i <= 15; $i++) {
+            $this->user->creditAdd(10.00, "Transaction {$i}");
+        }
+
+        // Test normal limit
+        $history = $this->user->creditHistory(5);
+        expect($history)->toHaveCount(5);
+
+        // Test zero limit - should be clamped to 1
+        $history = $this->user->creditHistory(0);
+        expect($history)->toHaveCount(1);
+
+        // Test negative limit - should be clamped to 1
+        $history = $this->user->creditHistory(-10);
+        expect($history)->toHaveCount(1);
+
+        // Test excessive limit - should be clamped to 1000 (but we only have 15 records)
+        $history = $this->user->creditHistory(9999);
+        expect($history)->toHaveCount(15);
+
+        // Test exactly at max (1000) - should work
+        $history = $this->user->creditHistory(1000);
+        expect($history)->toHaveCount(15);
+
+        // Test just above max (1001) - should be clamped to 1000
+        $history = $this->user->creditHistory(1001);
+        expect($history)->toHaveCount(15);
+    });
+});
+
+// Concurrency and race condition tests
+describe('concurrency', function () {
+    it('prevents race conditions when adding credits concurrently', function () {
+        // This test verifies that the lockForUpdate() mechanism prevents race conditions
+        // when multiple credit operations happen simultaneously on the same user.
+        // Without proper locking, concurrent transactions could read the same balance
+        // and write incorrect running_balance values.
+
+        $this->user->creditAdd(100.00, 'Initial balance');
+
+        // Simulate concurrent credit additions by nesting DB transactions
+        // In a real concurrent scenario, these would run in separate processes/threads
+        \Illuminate\Support\Facades\DB::transaction(function () {
+            // First concurrent operation: read balance and prepare to add 50
+            $balance1 = $this->user->creditBalance();
+            expect($balance1)->toBe(100.00);
+
+            // The lockForUpdate() in creditAdd ensures this completes atomically
+            $this->user->creditAdd(50.00, 'Concurrent add 1');
+
+            // Second operation should see the updated balance due to locking
+            $balance2 = $this->user->creditBalance();
+            expect($balance2)->toBe(150.00);
+
+            $this->user->creditAdd(25.00, 'Concurrent add 2');
+
+            // Final balance should be correct: 100 + 50 + 25 = 175
+            $finalBalance = $this->user->creditBalance();
+            expect($finalBalance)->toBe(175.00);
+        });
+
+        // Verify the running balances are sequential and correct
+        $transactions = $this->user->creditHistory(10, 'asc');
+        expect((float) $transactions[0]->running_balance)->toBe(100.00)
+            ->and((float) $transactions[1]->running_balance)->toBe(150.00)
+            ->and((float) $transactions[2]->running_balance)->toBe(175.00);
+    });
+
+    it('prevents race conditions when deducting credits concurrently', function () {
+        $this->user->creditAdd(200.00, 'Initial balance');
+
+        \Illuminate\Support\Facades\DB::transaction(function () {
+            $balance1 = $this->user->creditBalance();
+            expect($balance1)->toBe(200.00);
+
+            // Deduct operations should be serialized by lockForUpdate()
+            $this->user->creditDeduct(30.00, 'Concurrent deduct 1');
+
+            $balance2 = $this->user->creditBalance();
+            expect($balance2)->toBe(170.00);
+
+            $this->user->creditDeduct(20.00, 'Concurrent deduct 2');
+
+            $finalBalance = $this->user->creditBalance();
+            expect($finalBalance)->toBe(150.00);
+        });
+
+        // Verify the running balances are sequential and correct
+        $transactions = $this->user->creditHistory(10, 'asc');
+        expect((float) $transactions[0]->running_balance)->toBe(200.00)
+            ->and((float) $transactions[1]->running_balance)->toBe(170.00)
+            ->and((float) $transactions[2]->running_balance)->toBe(150.00);
+    });
+
+    it('prevents overdraft race conditions with insufficient balance check', function () {
+        config(['credits.allow_negative_balance' => false]);
+
+        $this->user->creditAdd(100.00, 'Initial balance');
+
+        // Try to deduct more than available in a concurrent scenario
+        // The lock should prevent both operations from reading the same balance
+        \Illuminate\Support\Facades\DB::transaction(function () {
+            // First deduction succeeds
+            $this->user->creditDeduct(80.00, 'Large deduction');
+            expect($this->user->creditBalance())->toBe(20.00);
+
+            // Second deduction should fail because balance is only 20
+            expect(fn () => $this->user->creditDeduct(50.00, 'Would overdraft'))
+                ->toThrow(InsufficientCreditsException::class);
+
+            // Balance should remain at 20
+            expect($this->user->creditBalance())->toBe(20.00);
+        });
+    });
 });

@@ -7,8 +7,9 @@ use Climactic\Credits\Events\CreditsDeducted;
 use Climactic\Credits\Events\CreditsTransferred;
 use Climactic\Credits\Exceptions\InsufficientCreditsException;
 use Climactic\Credits\Models\Credit;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 trait HasCredits
@@ -38,27 +39,32 @@ trait HasCredits
      */
     public function creditAdd(float $amount, ?string $description = null, array $metadata = []): Credit
     {
-        $currentBalance = $this->creditBalance();
-        $newBalance = $currentBalance + $amount;
+        return DB::transaction(function () use ($amount, $description, $metadata) {
+            $lastBalance = (float) ($this->credits()
+                ->lockForUpdate()
+                ->latest('id')
+                ->value('running_balance') ?? 0.0);
+            $newBalance = $lastBalance + $amount;
 
-        $credit = $this->credits()->create([
-            'amount' => $amount,
-            'description' => $description,
-            'type' => 'credit',
-            'metadata' => $metadata,
-            'running_balance' => $newBalance,
-        ]);
+            $credit = $this->credits()->create([
+                'amount' => $amount,
+                'description' => $description,
+                'type' => 'credit',
+                'metadata' => $metadata,
+                'running_balance' => $newBalance,
+            ]);
 
-        event(new CreditsAdded(
-            creditable: $this,
-            transactionId: $credit->id,
-            amount: $amount,
-            newBalance: $newBalance,
-            description: $description,
-            metadata: $metadata
-        ));
+            event(new CreditsAdded(
+                creditable: $this,
+                transactionId: $credit->id,
+                amount: $amount,
+                newBalance: $newBalance,
+                description: $description,
+                metadata: $metadata
+            ));
 
-        return $credit;
+            return $credit;
+        });
     }
 
     /**
@@ -78,31 +84,36 @@ trait HasCredits
      */
     public function creditDeduct(float $amount, ?string $description = null, array $metadata = []): Credit
     {
-        $currentBalance = $this->creditBalance();
-        $newBalance = $currentBalance - $amount;
+        return DB::transaction(function () use ($amount, $description, $metadata) {
+            $lastBalance = (float) ($this->credits()
+                ->lockForUpdate()
+                ->latest('id')
+                ->value('running_balance') ?? 0.0);
+            $newBalance = $lastBalance - $amount;
 
-        if (! config('credits.allow_negative_balance') && $newBalance < 0) {
-            throw new InsufficientCreditsException($amount, $currentBalance);
-        }
+            if (! config('credits.allow_negative_balance') && $newBalance < 0) {
+                throw new InsufficientCreditsException($amount, $lastBalance);
+            }
 
-        $credit = $this->credits()->create([
-            'amount' => $amount,
-            'description' => $description,
-            'type' => 'debit',
-            'metadata' => $metadata,
-            'running_balance' => $newBalance,
-        ]);
+            $credit = $this->credits()->create([
+                'amount' => $amount,
+                'description' => $description,
+                'type' => 'debit',
+                'metadata' => $metadata,
+                'running_balance' => $newBalance,
+            ]);
 
-        event(new CreditsDeducted(
-            creditable: $this,
-            transactionId: $credit->id,
-            amount: $amount,
-            newBalance: $newBalance,
-            description: $description,
-            metadata: $metadata
-        ));
+            event(new CreditsDeducted(
+                creditable: $this,
+                transactionId: $credit->id,
+                amount: $amount,
+                newBalance: $newBalance,
+                description: $description,
+                metadata: $metadata
+            ));
 
-        return $credit;
+            return $credit;
+        });
     }
 
     /**
@@ -123,9 +134,9 @@ trait HasCredits
     public function creditBalance(): float
     {
         // Use latest by ID to ensure correct order even with same timestamps
-        return $this->credits()
+        return (float) ($this->credits()
             ->latest('id')
-            ->value('running_balance') ?? 0.0;
+            ->value('running_balance') ?? 0.0);
     }
 
     /**
@@ -191,8 +202,17 @@ trait HasCredits
     /**
      * Get the transaction history of the model.
      */
-    public function creditHistory(int $limit = 10, string $order = 'desc'): Collection
+    public function creditHistory(int $limit = 10, string $order = 'desc'): EloquentCollection
     {
+        // Sanitize order direction - only allow 'asc' or 'desc'
+        $order = strtolower($order);
+        if (! in_array($order, ['asc', 'desc'], true)) {
+            $order = 'desc';
+        }
+
+        // Clamp limit to a positive integer between 1 and 1000
+        $limit = min(max((int) $limit, 1), 1000);
+
         return $this->credits()
             ->orderBy('created_at', $order)
             ->limit($limit)
@@ -204,7 +224,7 @@ trait HasCredits
      *
      * @deprecated Use creditHistory() instead. Will be removed in v2.0
      */
-    public function getTransactionHistory(int $limit = 10, string $order = 'desc'): Collection
+    public function getTransactionHistory(int $limit = 10, string $order = 'desc'): EloquentCollection
     {
         trigger_error('Method getTransactionHistory() is deprecated. Use creditHistory() instead.', E_USER_DEPRECATED);
 
@@ -239,13 +259,15 @@ trait HasCredits
     public function creditBalanceAt($dateTime): float
     {
         if (is_int($dateTime)) {
-            $dateTime = new \DateTime("@$dateTime");
+            $dateTime = Carbon::createFromTimestamp($dateTime);
+        } elseif ($dateTime instanceof \DateTimeInterface) {
+            $dateTime = Carbon::instance($dateTime);
         }
 
-        return $this->credits()
+        return (float) ($this->credits()
             ->where('created_at', '<=', $dateTime)
             ->latest('id')
-            ->value('running_balance') ?? 0.0;
+            ->value('running_balance') ?? 0.0);
     }
 
     /**
