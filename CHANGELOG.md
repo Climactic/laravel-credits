@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-credits` will be documented in this file.
 
+## v1.3.2 - 2025-10-27
+
+### What's Changed
+
+* chore: upgrade dependencies and readme by @adiologydev in https://github.com/Climactic/laravel-credits/pull/13
+
+**Full Changelog**: https://github.com/Climactic/laravel-credits/compare/v1.3.1...v1.3.2
+
 ## chore: update dependencies - 2025-10-16
 
 ### What's Changed
