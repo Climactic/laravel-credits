@@ -6,6 +6,7 @@
 
 A ledger-based Laravel package for managing credit-based systems in your application. Perfect for virtual currencies, reward points, or any credit-based feature.
 
+[![Discord](https://img.shields.io/discord/303195322514014210?style=flat-square)](https://discord.gg/kedWdzwwR5)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/climactic/laravel-credits.svg?style=flat-square)](https://packagist.org/packages/climactic/laravel-credits)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/climactic/laravel-credits/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/climactic/laravel-credits/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/climactic/laravel-credits/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/climactic/laravel-credits/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
@@ -193,6 +194,7 @@ Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed re
 ## Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+You can also join our Discord server to discuss ideas and get help: [Discord Invite](https://discord.gg/kedWdzwwR5).
 
 ## Security Vulnerabilities
 
@@ -203,6 +205,10 @@ Please report security vulnerabilities to [security@climactic.co](mailto:securit
 GitHub Sponsors: [@climactic](https://github.com/sponsors/climactic)
 
 To become a title sponsor, please contact [sponsors@climactic.co](mailto:sponsors@climactic.co).
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=climactic/laravel-credits&type=date&legend=top-left)](https://www.star-history.com/#climactic/laravel-credits&type=date&legend=top-left)
 
 ## License
 
