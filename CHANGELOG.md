@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-credits` will be documented in this file.
 
+## v1.3.3 - 2025-10-30
+
+### What's Changed
+
+* feat: query credits based on metadata by @adiologydev in https://github.com/Climactic/laravel-credits/pull/16
+
+**Full Changelog**: https://github.com/Climactic/laravel-credits/compare/v1.3.2...v1.3.3
+
 ## v1.3.2 - 2025-10-27
 
 ### What's Changed
