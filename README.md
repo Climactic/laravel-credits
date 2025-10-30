@@ -16,31 +16,44 @@ A ledger-based Laravel package for managing credit-based systems in your applica
 
 ## Table of Contents
 
-- [Features](#features)
-- [Installation](#installation)
-- [Configuration](#configuration)
-  - [Database Recommendations](#database-recommendations)
-- [Usage](#usage)
-  - [Setup Your Model](#setup-your-model)
-  - [Basic Usage](#basic-usage)
-  - [Transfers](#transfers)
-  - [Transaction History](#transaction-history)
-  - [Historical Balance](#historical-balance)
-  - [Metadata](#metadata)
-  - [Querying by Metadata](#querying-by-metadata)
-    - [Basic Metadata Queries](#basic-metadata-queries)
-    - [Advanced Metadata Queries](#advanced-metadata-queries)
-    - [Chaining Multiple Metadata Conditions](#chaining-multiple-metadata-conditions)
-    - [Convenience Methods](#convenience-methods)
-    - [Performance Optimization](#performance-optimization)
-  - [Events](#events)
-- [API Reference](#api-reference)
-  - [Available Methods](#available-methods)
-  - [Query Scopes](#query-scopes)
-  - [Deprecated Methods](#deprecated-methods)
-- [Testing](#testing)
-- [Contributing](#contributing)
-- [License](#license)
+- [Laravel Credits](#laravel-credits)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+    - [Database Recommendations](#database-recommendations)
+  - [Usage](#usage)
+    - [Setup Your Model](#setup-your-model)
+    - [Basic Usage](#basic-usage)
+    - [Transfers](#transfers)
+    - [Transaction History](#transaction-history)
+    - [Historical Balance](#historical-balance)
+    - [Metadata](#metadata)
+    - [Querying by Metadata](#querying-by-metadata)
+      - [Basic Metadata Queries](#basic-metadata-queries)
+      - [Advanced Metadata Queries](#advanced-metadata-queries)
+      - [Chaining Multiple Metadata Conditions](#chaining-multiple-metadata-conditions)
+      - [Convenience Methods](#convenience-methods)
+      - [Performance Optimization](#performance-optimization)
+        - [When to Optimize](#when-to-optimize)
+        - [MySQL/MariaDB: Virtual Columns with Indexes](#mysqlmariadb-virtual-columns-with-indexes)
+        - [PostgreSQL: GIN Indexes on JSONB](#postgresql-gin-indexes-on-jsonb)
+        - [SQLite: Limited Support](#sqlite-limited-support)
+        - [Choosing What to Index](#choosing-what-to-index)
+        - [Best Practices](#best-practices)
+    - [Events](#events)
+  - [API Reference](#api-reference)
+    - [Available Methods](#available-methods)
+    - [Query Scopes](#query-scopes)
+    - [Deprecated Methods](#deprecated-methods)
+  - [Testing](#testing)
+  - [Changelog](#changelog)
+  - [Contributing](#contributing)
+  - [Security Vulnerabilities](#security-vulnerabilities)
+  - [Sponsors](#sponsors)
+  - [Star History](#star-history)
+  - [License](#license)
+  - [Disclaimer](#disclaimer)
 
 ## Features
 
@@ -399,16 +412,6 @@ $user->credits()->whereMetadataContains('tags', 'premium')->get();
 4. **Test with production data**: Benchmark before and after indexing
 5. **Monitor index usage**: Remove unused indexes to save storage
 
-##### Benchmarks
-
-Without indexes (1M transactions):
-- Simple metadata query: ~800ms
-- Multiple conditions: ~1200ms
-
-With indexes (1M transactions):
-- Simple metadata query: ~2ms (400x faster)
-- Multiple conditions: ~5ms (240x faster)
-
 ### Events
 
 Events are fired for each credit transaction, transfer, and balance update.
@@ -433,20 +436,20 @@ The events are:
 | `hasCredits(float $amount)`                                                                          | Check if model has enough credits            |
 | `creditBalanceAt(Carbon\|DateTimeInterface\|int $dateTime)`                                          | Get balance at a specific time               |
 | `credits()`                                                                                          | Eloquent relationship to credit transactions |
-| `creditsByMetadata(string $key, $operator, $value = null, int $limit = 10, string $order = 'desc')` | Get credits filtered by metadata key/value   |
-| `creditHistoryWithMetadata(array $filters, int $limit = 10, string $order = 'desc')`                | Get credits filtered by multiple metadata    |
+| `creditsByMetadata(string $key, $operator, $value = null, int $limit = 10, string $order = 'desc')`  | Get credits filtered by metadata key/value   |
+| `creditHistoryWithMetadata(array $filters, int $limit = 10, string $order = 'desc')`                 | Get credits filtered by multiple metadata    |
 
 ### Query Scopes
 
 These scopes can be used on the `credits()` relationship:
 
-| Scope                                                    | Description                                     |
-| -------------------------------------------------------- | ----------------------------------------------- |
-| `whereMetadata(string $key, $operator, $value = null)`   | Filter by metadata key/value                    |
-| `whereMetadataContains(string $key, $value)`             | Filter where metadata array contains value      |
-| `whereMetadataHas(string $key)`                          | Filter where metadata key exists                |
-| `whereMetadataNull(string $key)`                         | Filter where metadata key is null/doesn't exist |
-| `whereMetadataLength(string $key, $operator, $value)`    | Filter by metadata array length                 |
+| Scope                                                  | Description                                     |
+| ------------------------------------------------------ | ----------------------------------------------- |
+| `whereMetadata(string $key, $operator, $value = null)` | Filter by metadata key/value                    |
+| `whereMetadataContains(string $key, $value)`           | Filter where metadata array contains value      |
+| `whereMetadataHas(string $key)`                        | Filter where metadata key exists                |
+| `whereMetadataNull(string $key)`                       | Filter where metadata key is null/doesn't exist |
+| `whereMetadataLength(string $key, $operator, $value)`  | Filter by metadata array length                 |
 
 ### Deprecated Methods
 

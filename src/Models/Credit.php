@@ -39,13 +39,11 @@ class Credit extends Model
      *
      * Supports dot notation for nested keys (e.g., 'user.id', 'items.0.name').
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  string  $key  Metadata key (supports dot notation)
      * @param  mixed  $operator  Comparison operator or value if no operator
      * @param  mixed  $value  Value to compare (optional if operator is value)
-     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeWhereMetadata($query, string $key, $operator = null, $value = null)
+    public function scopeWhereMetadata(\Illuminate\Database\Eloquent\Builder $query, string $key, $operator = null, $value = null): \Illuminate\Database\Eloquent\Builder
     {
         // Handle two-parameter syntax: whereMetadata('key', 'value')
         if ($value === null) {
@@ -62,12 +60,10 @@ class Credit extends Model
      * For arrays: checks if value exists in array.
      * For objects: checks if key/value pair exists.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  string  $key  Metadata key (supports dot notation)
      * @param  mixed  $value  Value to search for
-     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeWhereMetadataContains($query, string $key, $value)
+    public function scopeWhereMetadataContains(\Illuminate\Database\Eloquent\Builder $query, string $key, $value): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereJsonContains("metadata->{$key}", $value);
     }
@@ -75,11 +71,9 @@ class Credit extends Model
     /**
      * Query credits where metadata key exists (not null).
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  string  $key  Metadata key (supports dot notation)
-     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeWhereMetadataHas($query, string $key)
+    public function scopeWhereMetadataHas(\Illuminate\Database\Eloquent\Builder $query, string $key): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereNotNull("metadata->{$key}");
     }
@@ -87,11 +81,9 @@ class Credit extends Model
     /**
      * Query credits where metadata key is null or doesn't exist.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  string  $key  Metadata key (supports dot notation)
-     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeWhereMetadataNull($query, string $key)
+    public function scopeWhereMetadataNull(\Illuminate\Database\Eloquent\Builder $query, string $key): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereNull("metadata->{$key}");
     }
@@ -101,13 +93,11 @@ class Credit extends Model
      *
      * Useful for arrays: whereMetadataLength('items', '>', 5)
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @param  string  $key  Metadata key (supports dot notation)
      * @param  mixed  $operator  Comparison operator
      * @param  mixed  $value  Length to compare
-     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeWhereMetadataLength($query, string $key, $operator = null, $value = null)
+    public function scopeWhereMetadataLength(\Illuminate\Database\Eloquent\Builder $query, string $key, $operator = null, $value = null): \Illuminate\Database\Eloquent\Builder
     {
         // Handle two-parameter syntax
         if ($value === null) {

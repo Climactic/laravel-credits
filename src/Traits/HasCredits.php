@@ -454,8 +454,10 @@ trait HasCredits
                     break;
                 case 'where':
                 default:
+                    // Handle two-parameter syntax: ['key' => 'source', 'operator' => 'purchase']
+                    // treats 'purchase' as the value. Skip this if operator is explicitly '='
+                    // to allow null equality checks: ['key' => 'foo', 'operator' => '=', 'value' => null]
                     if ($value === null && $operator !== '=') {
-                        // Two-parameter syntax: operator is actually the value
                         $query->whereMetadata($key, $operator);
                     } else {
                         $query->whereMetadata($key, $operator, $value);
