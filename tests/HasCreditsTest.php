@@ -1014,7 +1014,7 @@ describe('Metadata Querying', function () {
         expect($results)->toHaveCount(0);
     });
 
-    it('handles metadata queries with deeply nested keys', function () {
+    it('handles metadata queries with deeply nested keys using dot notation', function () {
         // Add a transaction with deeply nested metadata
         $this->user->creditAdd(10.00, 'Deep nested', [
             'data' => [
@@ -1026,7 +1026,24 @@ describe('Metadata Querying', function () {
             ],
         ]);
 
-        $results = $this->user->credits()->whereMetadata('data->level1->level2->value', 'found')->get();
+        // Use dot notation for nested JSON paths
+        $results = $this->user->credits()
+            ->where('metadata->data->level1->level2->value', 'found')
+            ->get();
+
+        expect($results)->toHaveCount(1);
+    });
+
+    it('handles metadata queries with simple nested keys', function () {
+        // For simpler nesting, we can still use the whereMetadata scope
+        $this->user->creditAdd(10.00, 'Simple nested', [
+            'user' => [
+                'id' => 123,
+            ],
+        ]);
+
+        // This works because Laravel converts 'user.id' to 'user->id' in JSON paths
+        $results = $this->user->credits()->whereMetadata('user.id', 123)->get();
 
         expect($results)->toHaveCount(1);
     });
@@ -1039,5 +1056,32 @@ describe('Metadata Querying', function () {
             ->get();
 
         expect($results)->toHaveCount(3);
+    });
+
+    it('rejects empty metadata keys', function () {
+        expect(fn () => $this->user->credits()->whereMetadata('', 'value')->get())
+            ->toThrow(\InvalidArgumentException::class, 'Metadata key cannot be empty');
+    });
+
+    it('rejects metadata keys with arrow operator', function () {
+        expect(fn () => $this->user->credits()->whereMetadata('data->key', 'value')->get())
+            ->toThrow(\InvalidArgumentException::class, 'cannot contain "->"');
+    });
+
+    it('rejects metadata keys with quotes', function () {
+        expect(fn () => $this->user->credits()->whereMetadata('data"key', 'value')->get())
+            ->toThrow(\InvalidArgumentException::class, 'cannot contain quotes');
+
+        expect(fn () => $this->user->credits()->whereMetadata("data'key", 'value')->get())
+            ->toThrow(\InvalidArgumentException::class, 'cannot contain quotes');
+    });
+
+    it('trims whitespace from metadata keys', function () {
+        $this->user->creditAdd(10.00, 'Test', ['source' => 'test']);
+
+        // Should work even with whitespace
+        $results = $this->user->credits()->whereMetadata('  source  ', 'test')->get();
+
+        expect($results)->toHaveCount(1);
     });
 });

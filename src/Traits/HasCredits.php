@@ -433,7 +433,6 @@ trait HasCredits
             $key = $filter['key'] ?? null;
             $method = $filter['method'] ?? 'where';
             $operator = $filter['operator'] ?? '=';
-            $value = $filter['value'] ?? null;
 
             if (! $key) {
                 continue; // Skip invalid filters
@@ -441,6 +440,7 @@ trait HasCredits
 
             switch ($method) {
                 case 'contains':
+                    $value = $filter['value'] ?? null;
                     $query->whereMetadataContains($key, $value);
                     break;
                 case 'has':
@@ -450,17 +450,18 @@ trait HasCredits
                     $query->whereMetadataNull($key);
                     break;
                 case 'length':
+                    $value = $filter['value'] ?? null;
                     $query->whereMetadataLength($key, $operator, $value);
                     break;
                 case 'where':
                 default:
-                    // Handle two-parameter syntax: ['key' => 'source', 'operator' => 'purchase']
-                    // treats 'purchase' as the value. Skip this if operator is explicitly '='
-                    // to allow null equality checks: ['key' => 'foo', 'operator' => '=', 'value' => null]
-                    if ($value === null && $operator !== '=') {
-                        $query->whereMetadata($key, $operator);
+                    // Use three-parameter form when 'value' key exists in filter array
+                    // Use two-parameter form only when 'value' key is missing
+                    if (array_key_exists('value', $filter)) {
+                        $query->whereMetadata($key, $operator, $filter['value']);
                     } else {
-                        $query->whereMetadata($key, $operator, $value);
+                        // Two-parameter syntax: treat 'operator' as the value
+                        $query->whereMetadata($key, $operator);
                     }
                     break;
             }

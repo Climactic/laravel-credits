@@ -30,6 +30,7 @@ A ledger-based Laravel package for managing credit-based systems in your applica
     - [Historical Balance](#historical-balance)
     - [Metadata](#metadata)
     - [Querying by Metadata](#querying-by-metadata)
+      - [Metadata Key Format](#metadata-key-format)
       - [Basic Metadata Queries](#basic-metadata-queries)
       - [Advanced Metadata Queries](#advanced-metadata-queries)
       - [Chaining Multiple Metadata Conditions](#chaining-multiple-metadata-conditions)
@@ -188,7 +189,27 @@ $user->creditAdd(100.00, 'Purchase', $metadata);
 
 ### Querying by Metadata
 
-The package provides powerful query scopes to filter transactions by metadata:
+The package provides powerful query scopes to filter transactions by metadata with built-in input validation for security.
+
+#### Metadata Key Format
+
+Metadata keys must follow these rules:
+- Use **dot notation** for nested keys (e.g., `'user.id'`, not `'user->id'`)
+- Cannot be empty or contain only whitespace
+- Cannot contain quotes (`"` or `'`)
+- Whitespace is automatically trimmed
+
+```php
+// ✅ Valid
+$user->credits()->whereMetadata('source', 'purchase')->get();
+$user->credits()->whereMetadata('user.id', 123)->get();
+$user->credits()->whereMetadata('  source  ', 'test')->get(); // Trimmed automatically (not recommended)
+
+// ❌ Invalid - will throw InvalidArgumentException
+$user->credits()->whereMetadata('', 'value')->get();              // Empty key
+$user->credits()->whereMetadata('data->key', 'value')->get();     // Arrow operator
+$user->credits()->whereMetadata('data"key', 'value')->get();      // Contains quotes
+```
 
 #### Basic Metadata Queries
 
@@ -206,6 +227,11 @@ $highValue = $user->credits()
 // Query by nested metadata (using dot notation)
 $specificUser = $user->credits()
     ->whereMetadata('user.id', 123)
+    ->get();
+
+// Deeply nested keys (use raw where for very deep nesting)
+$results = $user->credits()
+    ->where('metadata->data->level1->level2->value', 'found')
     ->get();
 ```
 
@@ -260,7 +286,19 @@ $filtered = $user->creditHistoryWithMetadata([
     ['key' => 'tags', 'value' => 'premium', 'method' => 'contains'],
     ['key' => 'order_value', 'operator' => '>', 'value' => 50],
 ], limit: 25);
+
+// Query with null values (explicitly include 'value' key)
+$nullChecks = $user->creditHistoryWithMetadata([
+    ['key' => 'refund_id', 'operator' => '=', 'value' => null],  // Check for null
+    ['key' => 'status', 'value' => 'pending'],                   // Simple equality
+], limit: 10);
 ```
+
+**Note:** When using `creditHistoryWithMetadata()`, the filter array distinguishes between "two-parameter syntax" and "three-parameter syntax" by checking if the `'value'` key exists:
+- If `'value'` key exists: uses three-parameter form `whereMetadata($key, $operator, $value)`
+- If `'value'` key missing: uses two-parameter form `whereMetadata($key, $operator)` where operator becomes the value
+
+This allows proper handling of null values while maintaining shorthand syntax convenience.
 
 #### Performance Optimization
 
