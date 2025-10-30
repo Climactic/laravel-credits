@@ -355,4 +355,119 @@ trait HasCredits
 
         return $this->creditBalanceAt($dateTime);
     }
+
+    /**
+     * Get credits filtered by metadata key/value.
+     *
+     * Supports dot notation for nested keys (e.g., 'user.id', 'items.0.name').
+     *
+     * @param  string  $key  Metadata key to filter by
+     * @param  mixed  $operator  Comparison operator or value if no operator
+     * @param  mixed  $value  Value to compare (optional if operator is value)
+     * @param  int  $limit  Maximum number of records to return (clamped to 1..1000)
+     * @param  string  $order  Sort direction, either 'asc' or 'desc' (defaults to 'desc')
+     * @return \Illuminate\Database\Eloquent\Collection Collection of Credit records matching the criteria
+     */
+    public function creditsByMetadata(string $key, $operator = null, $value = null, int $limit = 10, string $order = 'desc'): EloquentCollection
+    {
+        // Sanitize order direction
+        $order = strtolower($order);
+        if (! in_array($order, ['asc', 'desc'], true)) {
+            $order = 'desc';
+        }
+
+        // Clamp limit to a positive integer between 1 and 1000
+        $limit = min(max((int) $limit, 1), 1000);
+
+        // Build query
+        $query = $this->credits();
+
+        // Handle two-parameter syntax: creditsByMetadata('key', 'value')
+        if ($value === null) {
+            $query->whereMetadata($key, $operator);
+        } else {
+            $query->whereMetadata($key, $operator, $value);
+        }
+
+        return $query
+            ->orderBy('created_at', $order)
+            ->orderBy('id', $order)
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Get credits history filtered by multiple metadata conditions.
+     *
+     * @param  array  $filters  Array of metadata filters, each containing:
+     *                          - 'key': metadata key (required)
+     *                          - 'operator': comparison operator (optional, defaults to '=')
+     *                          - 'value': value to compare (required)
+     *                          - 'method': 'where', 'contains', 'has', or 'null' (optional, defaults to 'where')
+     * @param  int  $limit  Maximum number of records to return (clamped to 1..1000)
+     * @param  string  $order  Sort direction, either 'asc' or 'desc' (defaults to 'desc')
+     * @return \Illuminate\Database\Eloquent\Collection Collection of Credit records matching all criteria
+     *
+     * @example
+     * $user->creditHistoryWithMetadata([
+     *     ['key' => 'source', 'value' => 'purchase'],
+     *     ['key' => 'amount', 'operator' => '>', 'value' => 100],
+     *     ['key' => 'tags', 'value' => 'premium', 'method' => 'contains'],
+     * ], limit: 50);
+     */
+    public function creditHistoryWithMetadata(array $filters, int $limit = 10, string $order = 'desc'): EloquentCollection
+    {
+        // Sanitize order direction
+        $order = strtolower($order);
+        if (! in_array($order, ['asc', 'desc'], true)) {
+            $order = 'desc';
+        }
+
+        // Clamp limit to a positive integer between 1 and 1000
+        $limit = min(max((int) $limit, 1), 1000);
+
+        // Build query with filters
+        $query = $this->credits();
+
+        foreach ($filters as $filter) {
+            $key = $filter['key'] ?? null;
+            $method = $filter['method'] ?? 'where';
+            $operator = $filter['operator'] ?? '=';
+            $value = $filter['value'] ?? null;
+
+            if (! $key) {
+                continue; // Skip invalid filters
+            }
+
+            switch ($method) {
+                case 'contains':
+                    $query->whereMetadataContains($key, $value);
+                    break;
+                case 'has':
+                    $query->whereMetadataHas($key);
+                    break;
+                case 'null':
+                    $query->whereMetadataNull($key);
+                    break;
+                case 'length':
+                    $query->whereMetadataLength($key, $operator, $value);
+                    break;
+                case 'where':
+                default:
+                    if ($value === null && $operator !== '=') {
+                        // Two-parameter syntax: operator is actually the value
+                        $query->whereMetadata($key, $operator);
+                    } else {
+                        $query->whereMetadata($key, $operator, $value);
+                    }
+                    break;
+            }
+        }
+
+        return $query
+            ->orderBy('created_at', $order)
+            ->orderBy('id', $order)
+            ->limit($limit)
+            ->get();
+    }
 }
