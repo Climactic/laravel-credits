@@ -5,6 +5,19 @@ namespace Climactic\Credits\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @property int|string $id
+ * @property float $amount
+ * @property string|null $description
+ * @property string $type
+ * @property array<string, mixed>|null $metadata
+ * @property float $running_balance
+ * @property string $creditable_type
+ * @property int|string $creditable_id
+ * @property \Illuminate\Support\Carbon $created_at
+ * @property \Illuminate\Support\Carbon $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Model $creditable
+ */
 class Credit extends Model
 {
     protected $fillable = [

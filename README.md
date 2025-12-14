@@ -6,12 +6,14 @@
 
 A ledger-based Laravel package for managing credit-based systems in your application. Perfect for virtual currencies, reward points, or any credit-based feature.
 
-[![Discord](https://img.shields.io/discord/303195322514014210?style=flat-square)](https://discord.gg/kedWdzwwR5)
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/climactic/laravel-credits.svg?style=flat-square)](https://packagist.org/packages/climactic/laravel-credits)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/climactic/laravel-credits/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/climactic/laravel-credits/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/climactic/laravel-credits/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/climactic/laravel-credits/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/climactic/laravel-credits.svg?style=flat-square)](https://packagist.org/packages/climactic/laravel-credits)
-![Depfu](https://img.shields.io/depfu/dependencies/github/Climactic%2Flaravel-credits?style=flat-square)
+[![Discord](https://img.shields.io/discord/303195322514014210?style=for-the-badge)](https://discord.gg/kedWdzwwR5)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/climactic/laravel-credits.svg?style=for-the-badge)](https://packagist.org/packages/climactic/laravel-credits)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/climactic/laravel-credits/run-tests.yml?branch=main&label=tests&style=for-the-badge)](https://github.com/climactic/laravel-credits/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/climactic/laravel-credits/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=for-the-badge)](https://github.com/climactic/laravel-credits/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
+[![Total Downloads](https://img.shields.io/packagist/dt/climactic/laravel-credits.svg?style=for-the-badge)](https://packagist.org/packages/climactic/laravel-credits)
+![Depfu](https://img.shields.io/depfu/dependencies/github/Climactic%2Flaravel-credits?style=for-the-badge)
+[![Sponsor on GitHub](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?style=for-the-badge&logo=github)](https://github.com/sponsors/climactic)
+[![Support on Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/ClimacticCo)
 </div>
 
 ## Table of Contents
@@ -51,7 +53,8 @@ A ledger-based Laravel package for managing credit-based systems in your applica
   - [Changelog](#changelog)
   - [Contributing](#contributing)
   - [Security Vulnerabilities](#security-vulnerabilities)
-  - [Sponsors](#sponsors)
+  - [Support This Project](#support-this-project)
+    - [Sponsors](#sponsors)
   - [Star History](#star-history)
   - [License](#license)
   - [Disclaimer](#disclaimer)
@@ -523,11 +526,25 @@ You can also join our Discord server to discuss ideas and get help: [Discord Inv
 
 Please report security vulnerabilities to [security@climactic.co](mailto:security@climactic.co).
 
-## Sponsors
+## Support This Project
 
-GitHub Sponsors: [@climactic](https://github.com/sponsors/climactic)
+Laravel Credits is free and open source, built and maintained with care. If this package has saved you development time or helped power your application, please consider supporting its continued development.
 
-To become a title sponsor, please contact [sponsors@climactic.co](mailto:sponsors@climactic.co).
+<a href="https://github.com/sponsors/climactic">
+    <img src="https://img.shields.io/badge/Sponsor%20on-GitHub-ea4aaa?style=for-the-badge&logo=github" alt="Sponsor on GitHub" />
+</a>
+&nbsp;
+<a href="https://ko-fi.com/ClimacticCo">
+    <img src="https://img.shields.io/badge/Support%20on-Ko--fi-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support on Ko-fi" />
+</a>
+
+### Sponsors
+
+<!-- sponsors -->
+*Your logo here* — Become a sponsor and get your logo featured in this README and on our website.
+<!-- sponsors -->
+
+**Interested in title sponsorship?** Contact us at [sponsors@climactic.co](mailto:sponsors@climactic.co) for premium placement and recognition.
 
 ## Star History
 

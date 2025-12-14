@@ -8,6 +8,7 @@ use Climactic\Credits\Tests\TestModels\User;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
+    /** @var \Climactic\Credits\Tests\TestCase $this */
     $this->user = User::create([
         'name' => 'Test User',
         'email' => 'test@example.com',

@@ -57,6 +57,7 @@ trait HasCredits
                 ->value('running_balance') ?? 0.0);
             $newBalance = $lastBalance + $amount;
 
+            /** @var Credit $credit */
             $credit = $this->credits()->create([
                 'amount' => $amount,
                 'description' => $description,
@@ -118,6 +119,7 @@ trait HasCredits
                 throw new InsufficientCreditsException($amount, $lastBalance);
             }
 
+            /** @var Credit $credit */
             $credit = $this->credits()->create([
                 'amount' => $amount,
                 'description' => $description,

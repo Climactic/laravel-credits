@@ -5,6 +5,9 @@ namespace Climactic\Credits\Tests;
 use Climactic\Credits\CreditsServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
+/**
+ * @property \Climactic\Credits\Tests\TestModels\User $user
+ */
 class TestCase extends Orchestra
 {
     protected function setUp(): void
