@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-credits` will be documented in this file.
 
+## v1.4.0 - 2025-12-14
+
+### What's Changed
+
+* feat: add orWhere metadata query methods and split test files by @adiologydev in https://github.com/Climactic/laravel-credits/pull/18
+
+**Full Changelog**: https://github.com/Climactic/laravel-credits/compare/v1.3.3...v1.4.0
+
 ## v1.3.3 - 2025-10-30
 
 ### What's Changed
