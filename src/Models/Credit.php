@@ -167,4 +167,88 @@ class Credit extends Model
 
         return $query->whereJsonLength("metadata->{$key}", $operator, $value);
     }
+
+    /**
+     * Query credits where metadata key matches a value (OR condition).
+     *
+     * Supports dot notation for nested keys (e.g., 'user.id', 'items.0.name').
+     *
+     * @param  string  $key  Metadata key (supports dot notation)
+     * @param  mixed  $operator  Comparison operator or value if no operator
+     * @param  mixed  $value  Value to compare (optional if operator is value)
+     */
+    public function scopeOrWhereMetadata(\Illuminate\Database\Eloquent\Builder $query, string $key, $operator = null, $value = null): \Illuminate\Database\Eloquent\Builder
+    {
+        $key = $this->validateMetadataKey($key);
+
+        // Handle two-parameter syntax: orWhereMetadata('key', 'value')
+        if ($value === null) {
+            $value = $operator;
+            $operator = '=';
+        }
+
+        return $query->orWhere("metadata->{$key}", $operator, $value);
+    }
+
+    /**
+     * Query credits where metadata contains a value (OR condition).
+     *
+     * For arrays: checks if value exists in array.
+     * For objects: checks if key/value pair exists.
+     *
+     * @param  string  $key  Metadata key (supports dot notation)
+     * @param  mixed  $value  Value to search for
+     */
+    public function scopeOrWhereMetadataContains(\Illuminate\Database\Eloquent\Builder $query, string $key, $value): \Illuminate\Database\Eloquent\Builder
+    {
+        $key = $this->validateMetadataKey($key);
+
+        return $query->orWhereJsonContains("metadata->{$key}", $value);
+    }
+
+    /**
+     * Query credits where metadata key exists (not null) (OR condition).
+     *
+     * @param  string  $key  Metadata key (supports dot notation)
+     */
+    public function scopeOrWhereMetadataHas(\Illuminate\Database\Eloquent\Builder $query, string $key): \Illuminate\Database\Eloquent\Builder
+    {
+        $key = $this->validateMetadataKey($key);
+
+        return $query->orWhereNotNull("metadata->{$key}");
+    }
+
+    /**
+     * Query credits where metadata key is null or doesn't exist (OR condition).
+     *
+     * @param  string  $key  Metadata key (supports dot notation)
+     */
+    public function scopeOrWhereMetadataNull(\Illuminate\Database\Eloquent\Builder $query, string $key): \Illuminate\Database\Eloquent\Builder
+    {
+        $key = $this->validateMetadataKey($key);
+
+        return $query->orWhereNull("metadata->{$key}");
+    }
+
+    /**
+     * Query credits where metadata JSON length matches condition (OR condition).
+     *
+     * Useful for arrays: orWhereMetadataLength('items', '>', 5)
+     *
+     * @param  string  $key  Metadata key (supports dot notation)
+     * @param  mixed  $operator  Comparison operator
+     * @param  mixed  $value  Length to compare
+     */
+    public function scopeOrWhereMetadataLength(\Illuminate\Database\Eloquent\Builder $query, string $key, $operator = null, $value = null): \Illuminate\Database\Eloquent\Builder
+    {
+        $key = $this->validateMetadataKey($key);
+
+        // Handle two-parameter syntax
+        if ($value === null) {
+            $value = $operator;
+            $operator = '=';
+        }
+
+        return $query->orWhereJsonLength("metadata->{$key}", $operator, $value);
+    }
 }
