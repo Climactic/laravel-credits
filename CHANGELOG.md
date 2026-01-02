@@ -2,6 +2,12 @@
 
 All notable changes to `laravel-credits` will be documented in this file.
 
+## v1.4.1 - 2026-01-02
+
+- Added Laravel Boost Guidelines
+
+**Full Changelog**: https://github.com/Climactic/laravel-credits/compare/v1.4.0...v1.4.1
+
 ## v1.4.0 - 2025-12-14
 
 ### What's Changed
