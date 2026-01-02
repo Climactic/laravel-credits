@@ -16,48 +16,49 @@ A ledger-based Laravel package for managing credit-based systems in your applica
 [![Support on Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/ClimacticCo)
 </div>
 
-## Table of Contents
+## 📖 Table of Contents
 
 - [Laravel Credits](#laravel-credits)
-  - [Table of Contents](#table-of-contents)
+  - [📖 Table of Contents](#-table-of-contents)
   - [Features](#features)
-  - [Installation](#installation)
-  - [Configuration](#configuration)
-    - [Database Recommendations](#database-recommendations)
-  - [Usage](#usage)
-    - [Setup Your Model](#setup-your-model)
-    - [Basic Usage](#basic-usage)
-    - [Transfers](#transfers)
-    - [Transaction History](#transaction-history)
-    - [Historical Balance](#historical-balance)
-    - [Metadata](#metadata)
-    - [Querying by Metadata](#querying-by-metadata)
+  - [📦 Installation](#-installation)
+  - [⚙️ Configuration](#️-configuration)
+    - [🗄️ Database Recommendations](#️-database-recommendations)
+  - [🚀 Usage](#-usage)
+    - [🔧 Setup Your Model](#-setup-your-model)
+    - [💳 Basic Usage](#-basic-usage)
+    - [💸 Transfers](#-transfers)
+    - [📊 Transaction History](#-transaction-history)
+    - [🕐 Historical Balance](#-historical-balance)
+    - [📝 Metadata](#-metadata)
+    - [🔎 Querying by Metadata](#-querying-by-metadata)
       - [Metadata Key Format](#metadata-key-format)
       - [Basic Metadata Queries](#basic-metadata-queries)
       - [Advanced Metadata Queries](#advanced-metadata-queries)
       - [Chaining Multiple Metadata Conditions](#chaining-multiple-metadata-conditions)
       - [Convenience Methods](#convenience-methods)
-      - [Performance Optimization](#performance-optimization)
+      - [⚡ Performance Optimization](#-performance-optimization)
         - [When to Optimize](#when-to-optimize)
         - [MySQL/MariaDB: Virtual Columns with Indexes](#mysqlmariadb-virtual-columns-with-indexes)
         - [PostgreSQL: GIN Indexes on JSONB](#postgresql-gin-indexes-on-jsonb)
         - [SQLite: Limited Support](#sqlite-limited-support)
         - [Choosing What to Index](#choosing-what-to-index)
         - [Best Practices](#best-practices)
-    - [Events](#events)
-  - [API Reference](#api-reference)
-    - [Available Methods](#available-methods)
-    - [Query Scopes](#query-scopes)
-    - [Deprecated Methods](#deprecated-methods)
-  - [Testing](#testing)
-  - [Changelog](#changelog)
-  - [Contributing](#contributing)
-  - [Security Vulnerabilities](#security-vulnerabilities)
-  - [Support This Project](#support-this-project)
-    - [Sponsors](#sponsors)
-  - [Star History](#star-history)
-  - [License](#license)
-  - [Disclaimer](#disclaimer)
+    - [📢 Events](#-events)
+  - [📚 API Reference](#-api-reference)
+    - [🔧 Available Methods](#-available-methods)
+    - [🔍 Query Scopes](#-query-scopes)
+    - [⚠️ Deprecated Methods](#️-deprecated-methods)
+  - [🧪 Testing](#-testing)
+  - [📋 Changelog](#-changelog)
+  - [🤝 Contributing](#-contributing)
+  - [🔒 Security Vulnerabilities](#-security-vulnerabilities)
+  - [💖 Support This Project](#-support-this-project)
+    - [🌟 Sponsors](#-sponsors)
+  - [⭐ Star History](#-star-history)
+  - [📦 Other Packages](#-other-packages)
+  - [📄 License](#-license)
+  - [⚖️ Disclaimer](#️-disclaimer)
 
 ## Features
 
@@ -72,7 +73,7 @@ A ledger-based Laravel package for managing credit-based systems in your applica
 - ⚡ Efficient queries using running balance and indexes
 - 🚀 Performance optimization guide for high-volume applications
 
-## Installation
+## 📦 Installation
 
 You can install the package via composer:
 
@@ -93,7 +94,7 @@ Optionally publish the config file:
 php artisan vendor:publish --tag="credits-config"
 ```
 
-## Configuration
+## ⚙️ Configuration
 
 ```php
 return [
@@ -105,7 +106,7 @@ return [
 ];
 ```
 
-### Database Recommendations
+### 🗄️ Database Recommendations
 
 **Concurrency & Locking**: This package uses row-level locking (`SELECT FOR UPDATE`) to prevent race conditions during concurrent credit operations. This requires a database engine that supports proper transaction isolation and row-level locking:
 
@@ -115,9 +116,9 @@ return [
 
 For production environments with concurrent users, we recommend using MySQL/MariaDB (InnoDB) or PostgreSQL.
 
-## Usage
+## 🚀 Usage
 
-### Setup Your Model
+### 🔧 Setup Your Model
 
 Add the `HasCredits` trait to any model that should handle credits:
 
@@ -130,7 +131,7 @@ class User extends Model
 }
 ```
 
-### Basic Usage
+### 💳 Basic Usage
 
 ```php
 // Add credits
@@ -148,7 +149,7 @@ if ($user->hasCredits(30.00)) {
 }
 ```
 
-### Transfers
+### 💸 Transfers
 
 Transfer credits between two models:
 
@@ -156,7 +157,7 @@ Transfer credits between two models:
 $sender->creditTransfer($recipient, 100.00, 'Paying to user for their service');
 ```
 
-### Transaction History
+### 📊 Transaction History
 
 ```php
 // Get last 10 transactions
@@ -166,7 +167,7 @@ $history = $user->creditHistory();
 $history = $user->creditHistory(20, 'asc');
 ```
 
-### Historical Balance
+### 🕐 Historical Balance
 
 Get balance as of a specific date:
 
@@ -175,7 +176,7 @@ $date = new DateTime('2023-01-01');
 $balanceAsOf = $user->creditBalanceAt($date);
 ```
 
-### Metadata
+### 📝 Metadata
 
 Add additional information to transactions:
 
@@ -190,7 +191,7 @@ $metadata = [
 $user->creditAdd(100.00, 'Purchase', $metadata);
 ```
 
-### Querying by Metadata
+### 🔎 Querying by Metadata
 
 The package provides powerful query scopes to filter transactions by metadata with built-in input validation for security.
 
@@ -303,7 +304,7 @@ $nullChecks = $user->creditHistoryWithMetadata([
 
 This allows proper handling of null values while maintaining shorthand syntax convenience.
 
-#### Performance Optimization
+#### ⚡ Performance Optimization
 
 For high-volume applications querying metadata frequently, consider adding database indexes. Without indexes, metadata queries perform full table scans. With proper indexes, queries become nearly instant even with millions of records.
 
@@ -453,7 +454,7 @@ $user->credits()->whereMetadataContains('tags', 'premium')->get();
 4. **Test with production data**: Benchmark before and after indexing
 5. **Monitor index usage**: Remove unused indexes to save storage
 
-### Events
+### 📢 Events
 
 Events are fired for each credit transaction, transfer, and balance update.
 
@@ -463,9 +464,9 @@ The events are:
 - `CreditsDeducted`
 - `CreditsTransferred`
 
-## API Reference
+## 📚 API Reference
 
-### Available Methods
+### 🔧 Available Methods
 
 | Method                                                                                               | Description                                  |
 | ---------------------------------------------------------------------------------------------------- | -------------------------------------------- |
@@ -480,7 +481,7 @@ The events are:
 | `creditsByMetadata(string $key, $operator, $value = null, int $limit = 10, string $order = 'desc')`  | Get credits filtered by metadata key/value   |
 | `creditHistoryWithMetadata(array $filters, int $limit = 10, string $order = 'desc')`                 | Get credits filtered by multiple metadata    |
 
-### Query Scopes
+### 🔍 Query Scopes
 
 These scopes can be used on the `credits()` relationship:
 
@@ -492,7 +493,7 @@ These scopes can be used on the `credits()` relationship:
 | `whereMetadataNull(string $key)`                       | Filter where metadata key is null/doesn't exist |
 | `whereMetadataLength(string $key, $operator, $value)`  | Filter by metadata array length                 |
 
-### Deprecated Methods
+### ⚠️ Deprecated Methods
 
 The following methods are deprecated and will be removed in v2.0. They still work but will trigger deprecation warnings:
 
@@ -507,26 +508,26 @@ The following methods are deprecated and will be removed in v2.0. They still wor
 | `getBalanceAsOf()`        | `creditBalanceAt()` |
 | `creditTransactions()`    | `credits()`         |
 
-## Testing
+## 🧪 Testing
 
 ```bash
 composer test
 ```
 
-## Changelog
+## 📋 Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
 
-## Contributing
+## 🤝 Contributing
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 You can also join our Discord server to discuss ideas and get help: [Discord Invite](https://discord.gg/kedWdzwwR5).
 
-## Security Vulnerabilities
+## 🔒 Security Vulnerabilities
 
 Please report security vulnerabilities to [security@climactic.co](mailto:security@climactic.co).
 
-## Support This Project
+## 💖 Support This Project
 
 Laravel Credits is free and open source, built and maintained with care. If this package has saved you development time or helped power your application, please consider supporting its continued development.
 
@@ -538,7 +539,7 @@ Laravel Credits is free and open source, built and maintained with care. If this
     <img src="https://img.shields.io/badge/Support%20on-Ko--fi-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support on Ko-fi" />
 </a>
 
-### Sponsors
+### 🌟 Sponsors
 
 <!-- sponsors -->
 *Your logo here* — Become a sponsor and get your logo featured in this README and on our website.
@@ -546,13 +547,21 @@ Laravel Credits is free and open source, built and maintained with care. If this
 
 **Interested in title sponsorship?** Contact us at [sponsors@climactic.co](mailto:sponsors@climactic.co) for premium placement and recognition.
 
-## Star History
+## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=climactic/laravel-credits&type=date&legend=top-left)](https://www.star-history.com/#climactic/laravel-credits&type=date&legend=top-left)
 
-## License
+## 📦 Other Packages
+
+Check out our other Laravel packages:
+
+| Package | Description |
+| ------- | ----------- |
+| 🏢 [laravel-workspaces](https://github.com/climactic/laravel-workspaces) | Multi-tenancy package for adding workspace (team) functionality with member management, role-based permissions, and invitation system |
+
+## 📄 License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
 
-## Disclaimer
+## ⚖️ Disclaimer
 This package is not affiliated with Laravel. It's for Laravel but is not by Laravel. Laravel is a trademark of Taylor Otwell.
