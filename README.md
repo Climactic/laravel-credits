@@ -19,46 +19,45 @@ A ledger-based Laravel package for managing credit-based systems in your applica
 ## 📖 Table of Contents
 
 - [Laravel Credits](#laravel-credits)
-  - 📖 [Table of Contents](#-table-of-contents)
+  - [📖 Table of Contents](#-table-of-contents)
   - [Features](#features)
-  - 📦 [Installation](#-installation)
-  - ⚙️ [Configuration](#️-configuration)
-    - 🗄️ [Database Recommendations](#️-database-recommendations)
-  - 🚀 [Usage](#-usage)
-    - 🔧 [Setup Your Model](#-setup-your-model)
-    - 💳 [Basic Usage](#-basic-usage)
-    - 💸 [Transfers](#-transfers)
-    - 📊 [Transaction History](#-transaction-history)
-    - 🕐 [Historical Balance](#-historical-balance)
-    - 📝 [Metadata](#-metadata)
-    - 🔎 [Querying by Metadata](#-querying-by-metadata)
+  - [🌟 Sponsors](#-sponsors)
+  - [📦 Installation](#-installation)
+  - [⚙️ Configuration](#️-configuration)
+    - [🗄️ Database Recommendations](#️-database-recommendations)
+  - [🚀 Usage](#-usage)
+    - [🔧 Setup Your Model](#-setup-your-model)
+    - [💳 Basic Usage](#-basic-usage)
+    - [💸 Transfers](#-transfers)
+    - [📊 Transaction History](#-transaction-history)
+    - [🕐 Historical Balance](#-historical-balance)
+    - [📝 Metadata](#-metadata)
+    - [🔎 Querying by Metadata](#-querying-by-metadata)
       - [Metadata Key Format](#metadata-key-format)
       - [Basic Metadata Queries](#basic-metadata-queries)
       - [Advanced Metadata Queries](#advanced-metadata-queries)
       - [Chaining Multiple Metadata Conditions](#chaining-multiple-metadata-conditions)
       - [Convenience Methods](#convenience-methods)
-      - ⚡ [Performance Optimization](#-performance-optimization)
+      - [⚡ Performance Optimization](#-performance-optimization)
         - [When to Optimize](#when-to-optimize)
         - [MySQL/MariaDB: Virtual Columns with Indexes](#mysqlmariadb-virtual-columns-with-indexes)
         - [PostgreSQL: GIN Indexes on JSONB](#postgresql-gin-indexes-on-jsonb)
         - [SQLite: Limited Support](#sqlite-limited-support)
         - [Choosing What to Index](#choosing-what-to-index)
         - [Best Practices](#best-practices)
-    - 📢 [Events](#-events)
-  - 📚 [API Reference](#-api-reference)
-    - 🔧 [Available Methods](#-available-methods)
-    - 🔍 [Query Scopes](#-query-scopes)
-    - ⚠️ [Deprecated Methods](#️-deprecated-methods)
-  - 🧪 [Testing](#-testing)
-  - 📋 [Changelog](#-changelog)
-  - 🤝 [Contributing](#-contributing)
-  - 🔒 [Security Vulnerabilities](#-security-vulnerabilities)
-  - 💖 [Support This Project](#-support-this-project)
-    - 🌟 [Sponsors](#-sponsors)
-  - ⭐ [Star History](#-star-history)
-  - 📦 [Other Packages](#-other-packages)
-  - 📄 [License](#-license)
-  - ⚖️ [Disclaimer](#️-disclaimer)
+    - [📢 Events](#-events)
+  - [📚 API Reference](#-api-reference)
+    - [🔧 Available Methods](#-available-methods)
+    - [🔍 Query Scopes](#-query-scopes)
+    - [⚠️ Deprecated Methods](#️-deprecated-methods)
+  - [🧪 Testing](#-testing)
+  - [📋 Changelog](#-changelog)
+  - [🤝 Contributing](#-contributing)
+  - [🔒 Security Vulnerabilities](#-security-vulnerabilities)
+  - [💖 Support This Project](#-support-this-project)
+  - [⭐ Star History](#-star-history)
+  - [📄 License](#-license)
+  - [⚖️ Disclaimer](#️-disclaimer)
 
 ## Features
 
@@ -72,6 +71,14 @@ A ledger-based Laravel package for managing credit-based systems in your applica
 - 🔎 Powerful metadata querying with filters and scopes
 - ⚡ Efficient queries using running balance and indexes
 - 🚀 Performance optimization guide for high-volume applications
+
+## 🌟 Sponsors
+
+<!-- sponsors -->
+*Your logo here* — Become a sponsor and get your logo featured in this README and on our website.
+<!-- sponsors -->
+
+**Interested in title sponsorship?** Contact us at [sponsors@climactic.co](mailto:sponsors@climactic.co) for premium placement and recognition.
 
 ## 📦 Installation
 
@@ -539,25 +546,17 @@ Laravel Credits is free and open source, built and maintained with care. If this
     <img src="https://img.shields.io/badge/Support%20on-Ko--fi-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support on Ko-fi" />
 </a>
 
-### 🌟 Sponsors
-
-<!-- sponsors -->
-*Your logo here* — Become a sponsor and get your logo featured in this README and on our website.
-<!-- sponsors -->
-
-**Interested in title sponsorship?** Contact us at [sponsors@climactic.co](mailto:sponsors@climactic.co) for premium placement and recognition.
-
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=climactic/laravel-credits&type=date&legend=top-left)](https://www.star-history.com/#climactic/laravel-credits&type=date&legend=top-left)
 
-## 📦 Other Packages
+<!-- ## 📦 Other Packages
 
 Check out our other Laravel packages:
 
 | Package | Description |
 | ------- | ----------- |
-| 🏢 [laravel-workspaces](https://github.com/climactic/laravel-workspaces) | Multi-tenancy package for adding workspace (team) functionality with member management, role-based permissions, and invitation system |
+| 🏢 [laravel-workspaces](https://github.com/climactic/laravel-workspaces) | Multi-tenancy package for adding workspace (team) functionality with member management, role-based permissions, and invitation system | -->
 
 ## 📄 License
 

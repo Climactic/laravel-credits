@@ -7,3 +7,5 @@ parameters:
     tmpDir: build/phpstan
     checkOctaneCompatibility: true
     checkModelProperties: true
+    ignoreErrors:
+        - '#Trait Climactic\\Credits\\Traits\\HasCredits is used zero times#'
