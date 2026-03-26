@@ -2,18 +2,6 @@
 
 All notable changes to `laravel-credits` will be documented in this file.
 
-## v1.4.2 - 2026-03-23
-
-### What's Changed
-
-* feat: add laravel 13 support by @ludioao in https://github.com/Climactic/laravel-credits/pull/19
-
-### New Contributors
-
-* @ludioao made their first contribution in https://github.com/Climactic/laravel-credits/pull/19
-
-**Full Changelog**: https://github.com/Climactic/laravel-credits/compare/v1.4.1...v1.4.2
-
 ## v1.4.1 - 2026-01-02
 
 - Added Laravel Boost Guidelines
