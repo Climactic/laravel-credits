@@ -29,7 +29,7 @@
         "orchestra/testbench": "^10.8.0 || ^11.0",
         "pestphp/pest": "^4.3.0",
         "pestphp/pest-plugin-arch": "^4.0.0",
-        "pestphp/pest-plugin-laravel": "^4.0.0",
+        "pestphp/pest-plugin-laravel": "^5.0.1",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan-deprecation-rules": "^2.0",
         "phpstan/phpstan-phpunit": "^2.0"
