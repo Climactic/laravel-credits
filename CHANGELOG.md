@@ -26,6 +26,7 @@ All notable changes to `laravel-credits` will be documented in this file.
 
 - `creditBalance()` reads the account row (an indexed single-row lookup) instead of sorting the ledger, falling back to the ledger when no account row exists yet.
 - `creditAdd()`, `creditDeduct()` and `creditTransfer()` open their transaction on the model's own connection rather than the default one.
+- `creditTransfer()` now throws an `InvalidArgumentException` when sender and recipient are on different connections. A transaction only covers one connection, so the recipient's half used to commit outside it — a rollback would debit the sender and credit nobody.
 
 ## v1.4.2 - 2026-03-26
 

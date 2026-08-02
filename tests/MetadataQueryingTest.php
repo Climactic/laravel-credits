@@ -379,3 +379,28 @@ it('ignores non-numeric values when comparing a metadata key numerically', funct
 
     expect($results)->toHaveCount(3);
 });
+
+it('ignores values that merely start like a number', function () {
+    // '99 bottles' must not be compared as 99.
+    $this->user->creditAdd(10.00, 'Numeric prefix', ['order_value' => '99 bottles']);
+    $this->user->creditAdd(10.00, 'Negative prefix', ['order_value' => '-7 degrees']);
+
+    // Above 50: 75, 100, 200. Below 50: only 25 — '-7 degrees' must not count.
+    expect($this->user->credits()->whereMetadata('order_value', '>', 50)->get())->toHaveCount(3)
+        ->and($this->user->credits()->whereMetadata('order_value', '<', 50)->get())->toHaveCount(1);
+});
+
+it('ignores values that merely start like a number in orWhere conditions', function () {
+    $this->user->creditAdd(10.00, 'Numeric prefix', [
+        'source' => 'bonus',
+        'order_value' => '99 bottles',
+    ]);
+
+    $results = $this->user->credits()
+        ->whereMetadata('source', 'refund')
+        ->orWhereMetadata('order_value', '>', 150)
+        ->get();
+
+    // Refund (1) + Purchase 3 with order_value 200. '99 bottles' must not match.
+    expect($results)->toHaveCount(2);
+});

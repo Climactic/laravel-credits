@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
  * @property int|string $id
  * @property string $creditable_type
  * @property int|string $creditable_id
- * @property float $balance
+ * @property string $balance
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property-read Model $creditable

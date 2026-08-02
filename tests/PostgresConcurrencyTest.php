@@ -12,7 +12,6 @@
  * cannot reproduce — or disprove — a lost update.
  */
 
-use Climactic\Credits\Models\CreditAccount;
 use Climactic\Credits\Tests\TestCase;
 use Climactic\Credits\Tests\TestModels\User;
 use Illuminate\Support\Facades\DB;
@@ -41,14 +40,17 @@ function runCreditWorkers(array $specs): array
             $environment + getenv()
         );
 
+        if ($process === false) {
+            throw new RuntimeException('Could not start credit worker: '.implode(' ', $command));
+        }
+
         $processes[] = ['process' => $process, 'pipes' => $pipes];
     }
 
     $results = [];
 
     foreach ($processes as $index => $handle) {
-        $stdout = stream_get_contents($handle['pipes'][1]);
-        $stderr = stream_get_contents($handle['pipes'][2]);
+        [$stdout, $stderr] = drainWorkerPipes($handle['pipes']);
         proc_close($handle['process']);
 
         $decoded = json_decode(trim($stdout), true);
@@ -60,6 +62,52 @@ function runCreditWorkers(array $specs): array
     }
 
     return $results;
+}
+
+/**
+ * Read a worker's stdout and stderr to EOF.
+ *
+ * Both are drained together: reading one to EOF first would hang the moment a
+ * worker filled the other pipe's buffer — which is exactly what a worker dying
+ * with a long stack trace does.
+ *
+ * @param  array<int, resource>  $pipes
+ * @return array{0: string, 1: string}
+ */
+function drainWorkerPipes(array $pipes): array
+{
+    $output = [1 => '', 2 => ''];
+
+    foreach ($pipes as $pipe) {
+        stream_set_blocking($pipe, false);
+    }
+
+    while ($pipes !== []) {
+        $read = $pipes;
+        $write = null;
+        $except = null;
+
+        if (stream_select($read, $write, $except, 30) === false) {
+            break;
+        }
+
+        foreach ($read as $key => $pipe) {
+            $chunk = fread($pipe, 8192);
+
+            if ($chunk === false || $chunk === '') {
+                if (feof($pipe)) {
+                    fclose($pipe);
+                    unset($pipes[$key]);
+                }
+
+                continue;
+            }
+
+            $output[$key] .= $chunk;
+        }
+    }
+
+    return [$output[1], $output[2]];
 }
 
 /**
@@ -137,7 +185,7 @@ it('creates exactly one account row when writers race to create it', function ()
 
     runCreditWorkers($specs);
 
-    expect(CreditAccount::count())->toBe(1)
+    expect($this->user->creditAccount()->count())->toBe(1)
         ->and($this->user->creditBalance())->toBe(800.00);
 
     expectIntactLedgerChain($this->user);

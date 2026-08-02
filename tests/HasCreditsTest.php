@@ -69,6 +69,23 @@ it('can transfer credits between users', function () {
         ->and($recipient->creditBalance())->toBe(50.00);
 });
 
+it('refuses to transfer between models on different connections', function () {
+    // A transaction covers one connection, so the recipient's half would commit
+    // outside it — a rollback would debit the sender and credit nobody.
+    $recipient = User::create([
+        'name' => 'Recipient User',
+        'email' => 'recipient@example.com',
+    ]);
+    $recipient->setConnection('some_other_connection');
+
+    $this->user->creditAdd(100.00);
+
+    expect(fn () => $this->user->creditTransfer($recipient, 50.00))
+        ->toThrow(InvalidArgumentException::class, 'different database connections');
+
+    expect($this->user->creditBalance())->toBe(100.00);
+});
+
 it('can get transaction history', function () {
     $this->user->creditAdd(100.00, 'First credit');
     $this->user->creditDeduct(30.00, 'First debit');

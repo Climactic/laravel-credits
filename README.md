@@ -153,7 +153,7 @@ This requires a database engine with row-level locking:
 
 For production environments with concurrent users, use PostgreSQL or MySQL/MariaDB (InnoDB).
 
-The default isolation level (`READ COMMITTED` on both PostgreSQL and MySQL) is sufficient — the guarantee comes from the lock, not from the isolation level.
+Either default isolation level works — `READ COMMITTED` on PostgreSQL, `REPEATABLE READ` on MySQL/InnoDB. The guarantee comes from the lock, not from the isolation level, so there is nothing to configure.
 
 ### 💵 Amount Limits
 

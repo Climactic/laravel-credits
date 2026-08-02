@@ -140,9 +140,12 @@ class Credit extends Model
         // A CASE guard rather than a bare cast: non-numeric values yield NULL
         // and simply do not match, instead of aborting the query (PostgreSQL)
         // or being ranked above every number (SQLite).
+        // SQLite has no regex, so the equivalent of PostgreSQL's anchored
+        // pattern is two globs: starts like a number, and contains nothing that
+        // is not part of one. Without the second, '12abc' would cast to 12.
         $cast = $driver === 'pgsql'
             ? sprintf("case when %s ~ '%s' then (%s)::numeric end", $wrapped, '^-?[0-9]+(\.[0-9]+)?$', $wrapped)
-            : sprintf("case when %s glob '%s' then cast(%s as real) end", $wrapped, '[-0-9]*', $wrapped);
+            : sprintf("case when %s glob '%s' and %s not glob '%s' then cast(%s as real) end", $wrapped, '[-0-9]*', $wrapped, '*[^0-9.-]*', $wrapped);
 
         return $query->whereRaw("({$cast}) {$operator} ?", [$value], $boolean);
     }
