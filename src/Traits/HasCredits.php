@@ -7,10 +7,11 @@ use Climactic\Credits\Events\CreditsDeducted;
 use Climactic\Credits\Events\CreditsTransferred;
 use Climactic\Credits\Exceptions\InsufficientCreditsException;
 use Climactic\Credits\Models\Credit;
+use Climactic\Credits\Models\CreditAccount;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 
 trait HasCredits
 {
@@ -20,6 +21,16 @@ trait HasCredits
     public function credits(): MorphMany
     {
         return $this->morphMany(Credit::class, 'creditable');
+    }
+
+    /**
+     * Get the account row holding this model's current balance.
+     *
+     * The row is created lazily on the first balance mutation.
+     */
+    public function creditAccount(): MorphOne
+    {
+        return $this->morphOne(CreditAccount::class, 'creditable');
     }
 
     /**
@@ -50,11 +61,8 @@ trait HasCredits
             throw new \InvalidArgumentException('Amount must be greater than 0.');
         }
 
-        return DB::transaction(function () use ($amount, $description, $metadata) {
-            $lastBalance = (float) ($this->credits()
-                ->lockForUpdate()
-                ->latest('id')
-                ->value('running_balance') ?? 0.0);
+        return $this->getConnection()->transaction(function () use ($amount, $description, $metadata) {
+            $lastBalance = $this->creditLockBalance();
             $newBalance = $lastBalance + $amount;
 
             /** @var Credit $credit */
@@ -65,6 +73,8 @@ trait HasCredits
                 'metadata' => $metadata,
                 'running_balance' => $newBalance,
             ]);
+
+            $this->creditStoreBalance($newBalance);
 
             event(new CreditsAdded(
                 creditable: $this,
@@ -108,11 +118,8 @@ trait HasCredits
             throw new \InvalidArgumentException('Amount must be greater than 0.');
         }
 
-        return DB::transaction(function () use ($amount, $description, $metadata) {
-            $lastBalance = (float) ($this->credits()
-                ->lockForUpdate()
-                ->latest('id')
-                ->value('running_balance') ?? 0.0);
+        return $this->getConnection()->transaction(function () use ($amount, $description, $metadata) {
+            $lastBalance = $this->creditLockBalance();
             $newBalance = $lastBalance - $amount;
 
             if (! config('credits.allow_negative_balance') && $newBalance < 0) {
@@ -127,6 +134,8 @@ trait HasCredits
                 'metadata' => $metadata,
                 'running_balance' => $newBalance,
             ]);
+
+            $this->creditStoreBalance($newBalance);
 
             event(new CreditsDeducted(
                 creditable: $this,
@@ -156,9 +165,72 @@ trait HasCredits
     /**
      * Retrieve the model's current credit balance.
      *
-     * @return float The most recent `running_balance` as a float, or 0.0 if no transactions exist.
+     * @return float The account balance as a float, or 0.0 if no transactions exist.
      */
     public function creditBalance(): float
+    {
+        $balance = $this->creditAccount()->value('balance');
+
+        // No account row yet: either nothing was ever recorded for this model,
+        // or the ledger predates the accounts table and was not backfilled.
+        return $balance !== null
+            ? (float) $balance
+            : $this->creditLedgerBalance();
+    }
+
+    /**
+     * Lock this model's account row and return the balance it holds.
+     *
+     * The account row is a fixed lock target: there is exactly one per creditable
+     * and it is identified by a predicate that never stops matching it. Locking
+     * the latest ledger row instead does not serialize writers, because that row
+     * moves with every insert — a blocked writer is woken up holding the row that
+     * *used* to be latest and never learns about the one committed in front of it,
+     * silently computing its new balance from a stale value.
+     *
+     * Must be called inside a transaction.
+     */
+    protected function creditLockBalance(): float
+    {
+        $balance = $this->creditAccount()->lockForUpdate()->value('balance');
+
+        if ($balance !== null) {
+            return (float) $balance;
+        }
+
+        // First mutation for this creditable, or a ledger that predates the
+        // accounts table. Seed the row from the ledger; insertOrIgnore keeps a
+        // concurrent creator from aborting the transaction on the unique index,
+        // and blocks until the winner commits so the re-read below sees it.
+        $now = $this->freshTimestamp();
+
+        $this->creditAccount()->getRelated()->newQuery()->insertOrIgnore([
+            'creditable_type' => $this->getMorphClass(),
+            'creditable_id' => $this->getKey(),
+            'balance' => $this->creditLedgerBalance(),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        return (float) ($this->creditAccount()->lockForUpdate()->value('balance') ?? 0.0);
+    }
+
+    /**
+     * Write the new balance to the account row.
+     *
+     * Only ever called while holding the lock taken by creditLockBalance().
+     */
+    protected function creditStoreBalance(float $balance): void
+    {
+        $this->creditAccount()->update(['balance' => $balance]);
+    }
+
+    /**
+     * Read the balance straight off the ledger.
+     *
+     * Only used to seed an account row that does not exist yet.
+     */
+    protected function creditLedgerBalance(): float
     {
         // Use latest by ID to ensure correct order even with same timestamps
         return (float) ($this->credits()
@@ -198,8 +270,8 @@ trait HasCredits
     {
         $result = [];
 
-        $lastTransaction = DB::transaction(function () use ($recipient, $amount, $description, $metadata, &$result) {
-            // Pre-lock both models in deterministic order to prevent deadlocks
+        $lastTransaction = $this->getConnection()->transaction(function () use ($recipient, $amount, $description, $metadata, &$result) {
+            // Pre-lock both account rows in deterministic order to prevent deadlocks
             // Sort by model type first, then by ID to ensure consistent lock acquisition order
             $models = collect([$this, $recipient])
                 ->sortBy(function ($model) {
@@ -209,7 +281,7 @@ trait HasCredits
 
             // Acquire locks in deterministic order
             foreach ($models as $model) {
-                $model->credits()->lockForUpdate()->latest('id')->value('running_balance');
+                $model->creditLockBalance();
             }
 
             // Now perform the actual transfer operations

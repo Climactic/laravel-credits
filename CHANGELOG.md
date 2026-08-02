@@ -2,6 +2,25 @@
 
 All notable changes to `laravel-credits` will be documented in this file.
 
+## Unreleased
+
+### Fixed
+
+- **Concurrent `creditAdd()`/`creditDeduct()` on the same creditable could silently lose an update.** Both methods locked the latest ledger row, which moves with every insert: a writer blocked on that lock woke up holding the row that used to be latest, never saw the entry committed ahead of it, and computed its new balance from a stale value. No exception was raised, so the built-in transaction retry could not help. Under `allow_negative_balance = false` this also let concurrent deductions overdraw the balance.
+
+  Balances now live in a new `credit_accounts` table, one row per creditable, and every mutation locks that row instead. Because the row exists exactly once and never moves, concurrent writers are properly serialized.
+
+### Added
+
+- `credit_accounts` table and the `creditAccount()` relationship. The migration backfills balances from the existing ledger, so upgrades need nothing beyond `php artisan vendor:publish --tag="credits-migrations" && php artisan migrate`.
+- `credits.accounts_table_name` config option.
+- Concurrency tests that drive the package from separate processes against a real PostgreSQL server.
+
+### Changed
+
+- `creditBalance()` reads the account row (an indexed single-row lookup) instead of sorting the ledger, falling back to the ledger when no account row exists yet.
+- `creditAdd()`, `creditDeduct()` and `creditTransfer()` open their transaction on the model's own connection rather than the default one.
+
 ## v1.4.2 - 2026-03-26
 
 ### What's Changed

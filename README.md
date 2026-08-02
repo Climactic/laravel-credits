@@ -23,6 +23,7 @@ A ledger-based Laravel package for managing credit-based systems in your applica
   - [Features](#features)
   - [🌟 Sponsors](#-sponsors)
   - [📦 Installation](#-installation)
+  - [⬆️ Upgrading from 1.4 and earlier](#️-upgrading-from-14-and-earlier)
   - [⚙️ Configuration](#️-configuration)
     - [🗄️ Database Recommendations](#️-database-recommendations)
   - [🚀 Usage](#-usage)
@@ -65,6 +66,7 @@ A ledger-based Laravel package for managing credit-based systems in your applica
 - 💸 Credit transfers
 - 📢 Events for adding, deducting, and transferring credits
 - 💰 Balance tracking with running balance
+- 🔒 Safe under concurrency — balance mutations are serialized per creditable
 - 📊 Transaction history
 - 🔍 Point-in-time balance lookup
 - 📝 Transaction metadata support
@@ -95,11 +97,26 @@ php artisan vendor:publish --tag="credits-migrations"
 php artisan migrate
 ```
 
+This creates two tables: `credits` (the ledger) and `credit_accounts` (one row per creditable holding its current balance).
+
 Optionally publish the config file:
 
 ```bash
 php artisan vendor:publish --tag="credits-config"
 ```
+
+## ⬆️ Upgrading from 1.4 and earlier
+
+Version 1.5 adds the `credit_accounts` table and makes it the balance of record. Publish and run the new migration:
+
+```bash
+php artisan vendor:publish --tag="credits-migrations"
+php artisan migrate
+```
+
+The migration backfills one account row per creditable from the running balance of its most recent ledger entry, so existing balances carry over untouched. There are no API changes — `creditBalance()`, `creditAdd()`, `creditDeduct()` and `creditTransfer()` keep their signatures and behaviour.
+
+If your creditables use non-integer primary keys, adjust the `creditable_id` column in the published migration the same way you did for the `credits` table.
 
 ## ⚙️ Configuration
 
@@ -110,18 +127,27 @@ return [
 
     // Table name for credit transactions (change if you've updated the migration table name)
     'table_name' => 'credits',
+
+    // Table name for per-creditable account rows (the row locked during writes)
+    'accounts_table_name' => 'credit_accounts',
 ];
 ```
 
 ### 🗄️ Database Recommendations
 
-**Concurrency & Locking**: This package uses row-level locking (`SELECT FOR UPDATE`) to prevent race conditions during concurrent credit operations. This requires a database engine that supports proper transaction isolation and row-level locking:
+**Concurrency & Locking**: every balance mutation locks the creditable's row in `credit_accounts` with `SELECT ... FOR UPDATE`, computes the new balance, appends the ledger entry, and writes the balance back — all in one transaction. Because that row exists exactly once per creditable and is addressed by a predicate that always matches it, two concurrent writers are forced to take turns.
 
-- ✅ **MySQL/MariaDB**: Requires InnoDB engine (default in modern versions)
-- ✅ **PostgreSQL**: Full support for row-level locking
-- ⚠️ **SQLite**: Row-level locking is ignored; concurrent operations may produce incorrect results in high-concurrency scenarios
+This is why the balance does not live on the ledger's latest row. A lock on "the most recent entry" does not serialize anything: the row it points at moves with every insert, so a writer that blocks on it wakes up holding the entry that *used* to be latest, never learns about the one committed ahead of it, and computes its new balance from a stale value — silently, with no error to retry on.
 
-For production environments with concurrent users, we recommend using MySQL/MariaDB (InnoDB) or PostgreSQL.
+This requires a database engine with row-level locking:
+
+- ✅ **PostgreSQL**: full support
+- ✅ **MySQL/MariaDB**: requires the InnoDB engine (default in modern versions)
+- ⚠️ **SQLite**: ignores `SELECT ... FOR UPDATE` entirely; concurrent writers can still corrupt balances
+
+For production environments with concurrent users, use PostgreSQL or MySQL/MariaDB (InnoDB).
+
+The default isolation level (`READ COMMITTED` on both PostgreSQL and MySQL) is sufficient — the guarantee comes from the lock, not from the isolation level.
 
 ## 🚀 Usage
 
@@ -485,6 +511,7 @@ The events are:
 | `hasCredits(float $amount)`                                                                          | Check if model has enough credits            |
 | `creditBalanceAt(Carbon\|DateTimeInterface\|int $dateTime)`                                          | Get balance at a specific time               |
 | `credits()`                                                                                          | Eloquent relationship to credit transactions |
+| `creditAccount()`                                                                                    | Eloquent relationship to the account row holding the balance |
 | `creditsByMetadata(string $key, $operator, $value = null, int $limit = 10, string $order = 'desc')`  | Get credits filtered by metadata key/value   |
 | `creditHistoryWithMetadata(array $filters, int $limit = 10, string $order = 'desc')`                 | Get credits filtered by multiple metadata    |
 
@@ -519,6 +546,16 @@ The following methods are deprecated and will be removed in v2.0. They still wor
 
 ```bash
 composer test
+```
+
+The suite runs against in-memory SQLite by default. The concurrency tests drive the package from separate processes against a real server and are skipped unless you point the suite at PostgreSQL:
+
+```bash
+docker run -d --name credits-pg -e POSTGRES_USER=credits -e POSTGRES_PASSWORD=secret -e POSTGRES_DB=credits -p 5432:5432 postgres:18
+```
+
+```bash
+DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5432 DB_DATABASE=credits DB_USERNAME=credits DB_PASSWORD=secret vendor/bin/pest
 ```
 
 ## 📋 Changelog

@@ -23,4 +23,16 @@ return [
     |
     */
     'table_name' => 'credits',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Accounts Table Name
+    |--------------------------------------------------------------------------
+    |
+    | The name of the table holding one account row per creditable. This row
+    | stores the current balance and is the row that gets locked during
+    | concurrent credit operations. Default is 'credit_accounts'.
+    |
+    */
+    'accounts_table_name' => 'credit_accounts',
 ];
