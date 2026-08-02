@@ -3,11 +3,12 @@
 namespace Climactic\Credits\Tests;
 
 use Climactic\Credits\CreditsServiceProvider;
+use Climactic\Credits\Tests\TestModels\User;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 /**
- * @property \Climactic\Credits\Tests\TestModels\User $user
+ * @property User $user
  */
 class TestCase extends Orchestra
 {

@@ -8,6 +8,7 @@ use Climactic\Credits\Events\CreditsTransferred;
 use Climactic\Credits\Exceptions\InsufficientCreditsException;
 use Climactic\Credits\Models\Credit;
 use Climactic\Credits\Models\CreditAccount;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
@@ -51,7 +52,7 @@ trait HasCredits
      * @param  float  $amount  The amount to add; must be greater than 0.
      * @param  string|null  $description  Optional human-readable description for the transaction.
      * @param  array  $metadata  Optional arbitrary metadata stored with the transaction.
-     * @return \Climactic\Credits\Models\Credit The created Credit record with the updated running balance.
+     * @return Credit The created Credit record with the updated running balance.
      *
      * @throws \InvalidArgumentException If $amount is not greater than 0.
      */
@@ -334,7 +335,7 @@ trait HasCredits
      *
      * @param  int  $limit  Maximum number of records to return (clamped to 1..1000).
      * @param  string  $order  Sort direction, either `'asc'` or `'desc'` (invalid values default to `'desc'`).
-     * @return \Illuminate\Database\Eloquent\Collection|EloquentCollection A collection of Credit records matching the query.
+     * @return Collection|EloquentCollection A collection of Credit records matching the query.
      */
     public function creditHistory(int $limit = 10, string $order = 'desc'): EloquentCollection
     {
@@ -359,7 +360,7 @@ trait HasCredits
      *
      * @param  int  $limit  Maximum number of records to return (clamped to 1..1000).
      * @param  string  $order  Sort direction, either 'asc' or 'desc' (defaults to 'desc').
-     * @return \Illuminate\Database\Eloquent\Collection Collection of Credit records.
+     * @return Collection Collection of Credit records.
      *
      * @deprecated Use creditHistory() instead. Will be removed in v2.0.
      */
@@ -440,7 +441,7 @@ trait HasCredits
      * @param  mixed  $value  Value to compare (optional if operator is value)
      * @param  int  $limit  Maximum number of records to return (clamped to 1..1000)
      * @param  string  $order  Sort direction, either 'asc' or 'desc' (defaults to 'desc')
-     * @return \Illuminate\Database\Eloquent\Collection Collection of Credit records matching the criteria
+     * @return Collection Collection of Credit records matching the criteria
      */
     public function creditsByMetadata(string $key, $operator = null, $value = null, int $limit = 10, string $order = 'desc'): EloquentCollection
     {
@@ -480,7 +481,7 @@ trait HasCredits
      *                          - 'method': 'where', 'contains', 'has', or 'null' (optional, defaults to 'where')
      * @param  int  $limit  Maximum number of records to return (clamped to 1..1000)
      * @param  string  $order  Sort direction, either 'asc' or 'desc' (defaults to 'desc')
-     * @return \Illuminate\Database\Eloquent\Collection Collection of Credit records matching all criteria
+     * @return Collection Collection of Credit records matching all criteria
      *
      * @example
      * $user->creditHistoryWithMetadata([

@@ -1,10 +1,11 @@
 <?php
 
 use Climactic\Credits\Models\Credit;
+use Climactic\Credits\Tests\TestCase;
 use Climactic\Credits\Tests\TestModels\User;
 
 beforeEach(function () {
-    /** @var \Climactic\Credits\Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->user = User::create([
         'name' => 'Test User',
         'email' => 'test@example.com',

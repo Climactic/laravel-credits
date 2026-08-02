@@ -1,9 +1,10 @@
 <?php
 
+use Climactic\Credits\Tests\TestCase;
 use Climactic\Credits\Tests\TestModels\User;
 
 beforeEach(function () {
-    /** @var \Climactic\Credits\Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->user = User::create([
         'name' => 'Test User',
         'email' => 'test@example.com',
@@ -72,7 +73,7 @@ it('maintains consistency when operations fail mid-sequence', function () {
     // Second deduction fails
     try {
         $this->user->creditDeduct(100.00, 'Will fail');
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // Expected to fail
     }
 
@@ -111,7 +112,7 @@ it('handles transfer with zero would fail', function () {
     $this->user->creditAdd(100.00);
 
     expect(fn () => $this->user->creditTransfer($recipient, 0.00, 'Zero transfer'))
-        ->toThrow(\InvalidArgumentException::class);
+        ->toThrow(InvalidArgumentException::class);
 });
 
 it('handles transfer with negative amount would fail', function () {
@@ -119,7 +120,7 @@ it('handles transfer with negative amount would fail', function () {
     $this->user->creditAdd(100.00);
 
     expect(fn () => $this->user->creditTransfer($recipient, -50.00, 'Negative transfer'))
-        ->toThrow(\InvalidArgumentException::class);
+        ->toThrow(InvalidArgumentException::class);
 });
 
 it('preserves transaction history order with rapid operations', function () {
