@@ -1,0 +1,45 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Widens the ledger columns from decimal(10,2) to decimal(14,2).
+ *
+ * decimal(10,2) caps a balance at 99_999_999.99, which is low enough that
+ * ordinary amounts overflow it. Installations created before this migration
+ * still have the narrow columns, so widen them in place.
+ */
+return new class extends Migration
+{
+    public function up()
+    {
+        $this->setPrecision(14);
+    }
+
+    public function down()
+    {
+        // Only safe while every stored value still fits the narrower column.
+        $this->setPrecision(10);
+    }
+
+    protected function setPrecision(int $precision): void
+    {
+        $creditsTable = config('credits.table_name', 'credits');
+        $accountsTable = config('credits.accounts_table_name', 'credit_accounts');
+
+        if (Schema::hasTable($creditsTable)) {
+            Schema::table($creditsTable, function (Blueprint $table) use ($precision) {
+                $table->decimal('amount', $precision, 2)->change();
+                $table->decimal('running_balance', $precision, 2)->change();
+            });
+        }
+
+        if (Schema::hasTable($accountsTable)) {
+            Schema::table($accountsTable, function (Blueprint $table) use ($precision) {
+                $table->decimal('balance', $precision, 2)->default(0)->change();
+            });
+        }
+    }
+};

@@ -19,7 +19,8 @@ return new class extends Migration
             $table->string('creditable_type');
             $table->unsignedBigInteger('creditable_id');
 
-            $table->decimal('balance', 10, 2)->default(0);
+            // Matches the precision of the ledger columns.
+            $table->decimal('balance', 14, 2)->default(0);
             $table->timestamps();
 
             // One account per creditable. This is what makes the row a stable

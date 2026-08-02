@@ -10,11 +10,17 @@ All notable changes to `laravel-credits` will be documented in this file.
 
   Balances now live in a new `credit_accounts` table, one row per creditable, and every mutation locks that row instead. Because the row exists exactly once and never moves, concurrent writers are properly serialized.
 
+- **Amounts overflowed the schema well below the values the package advertised.** `amount` and `running_balance` were `decimal(10,2)`, capping a balance at 99,999,999.99. They are now `decimal(14,2)`, raising the ceiling to 999,999,999,999.99 — the largest value PHP's default `precision` setting still converts to a string without dropping the cents. SQLite ignores column precision, which is why this never surfaced in the test suite.
+
+- **Numeric metadata comparisons returned the wrong rows.** `whereMetadata('order_value', '>', 50)` compared the extracted JSON value as text, so on PostgreSQL '100' and '200' sorted below '50' and were silently excluded; on SQLite any text value ranked above every number and was silently included. Ordering comparisons against a numeric value are now cast to a number, with non-numeric values excluded rather than aborting the query.
+
 ### Added
 
 - `credit_accounts` table and the `creditAccount()` relationship. The migration backfills balances from the existing ledger, so upgrades need nothing beyond `php artisan vendor:publish --tag="credits-migrations" && php artisan migrate`.
+- `increase_credits_precision` migration, which widens the amount columns of installations created before this release.
 - `credits.accounts_table_name` config option.
 - Concurrency tests that drive the package from separate processes against a real PostgreSQL server.
+- The test suite can now run against PostgreSQL by setting `DB_CONNECTION=pgsql` and the usual `DB_*` variables.
 
 ### Changed
 

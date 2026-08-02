@@ -230,6 +230,8 @@ Publish config: `php artisan vendor:publish --tag="credits-config"`
 - `table_name` (default: 'credits') - Ledger table name
 - `accounts_table_name` (default: 'credit_accounts') - Per-creditable account table name
 
+Amounts are stored as `decimal(14,2)`, capping a balance at 999,999,999,999.99 — the largest value PHP's default `precision` setting converts to a string without dropping the cents.
+
 ### Best Practices
 
 1. Always use metadata for transaction context (order IDs, sources, categories)

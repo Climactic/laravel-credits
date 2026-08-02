@@ -11,8 +11,13 @@ return new class extends Migration
         Schema::create('credits', function (Blueprint $table) {
             $table->id();
             $table->morphs('creditable');
-            $table->decimal('amount', 10, 2);
-            $table->decimal('running_balance', 10, 2);
+            // Caps balances at 999_999_999_999.99. That is 14 significant
+            // digits — the most PHP's default `precision` ini setting keeps
+            // when it converts a float binding to a string for PDO. A wider
+            // column would accept values whose cents PHP had already rounded
+            // away; this way anything beyond the limit fails loudly instead.
+            $table->decimal('amount', 14, 2);
+            $table->decimal('running_balance', 14, 2);
             $table->string('description', 255)->nullable();
             $table->string('type');
             $table->json('metadata')->nullable();

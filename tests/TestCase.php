@@ -78,6 +78,7 @@ class TestCase extends Orchestra
         // Include the package migrations
         (include __DIR__.'/../database/migrations/create_credits_table.php.stub')->up();
         (include __DIR__.'/../database/migrations/create_credit_accounts_table.php.stub')->up();
+        (include __DIR__.'/../database/migrations/increase_credits_precision.php.stub')->up();
 
         // Include the test migrations
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');

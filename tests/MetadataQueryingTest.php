@@ -1,9 +1,10 @@
 <?php
 
+use Climactic\Credits\Tests\TestCase;
 use Climactic\Credits\Tests\TestModels\User;
 
 beforeEach(function () {
-    /** @var \Climactic\Credits\Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->user = User::create([
         'name' => 'Test User',
         'email' => 'test@example.com',
@@ -220,20 +221,20 @@ it('handles metadata queries combined with regular queries', function () {
 
 it('rejects empty metadata keys', function () {
     expect(fn () => $this->user->credits()->whereMetadata('', 'value')->get())
-        ->toThrow(\InvalidArgumentException::class, 'Metadata key cannot be empty');
+        ->toThrow(InvalidArgumentException::class, 'Metadata key cannot be empty');
 });
 
 it('rejects metadata keys with arrow operator', function () {
     expect(fn () => $this->user->credits()->whereMetadata('data->key', 'value')->get())
-        ->toThrow(\InvalidArgumentException::class, 'cannot contain "->"');
+        ->toThrow(InvalidArgumentException::class, 'cannot contain "->"');
 });
 
 it('rejects metadata keys with quotes', function () {
     expect(fn () => $this->user->credits()->whereMetadata('data"key', 'value')->get())
-        ->toThrow(\InvalidArgumentException::class, 'cannot contain quotes');
+        ->toThrow(InvalidArgumentException::class, 'cannot contain quotes');
 
     expect(fn () => $this->user->credits()->whereMetadata("data'key", 'value')->get())
-        ->toThrow(\InvalidArgumentException::class, 'cannot contain quotes');
+        ->toThrow(InvalidArgumentException::class, 'cannot contain quotes');
 });
 
 it('trims whitespace from metadata keys', function () {
@@ -347,4 +348,34 @@ it('can chain multiple different orWhere metadata methods', function () {
     // bonus (1) + has tags (3: Purchase 1, 2, 3) + order_value > 150 (1: Purchase 3 with 200)
     // Purchase 3 matches both tags and order_value, so unique count = 4
     expect($results)->toHaveCount(4);
+});
+
+it('compares numeric metadata numerically rather than as text', function () {
+    // Compared as text '100' and '200' both sort below '50', so a driver that
+    // compares the extracted JSON value as a string returns only 75.
+    $results = $this->user->credits()->whereMetadata('order_value', '>', 50)->get();
+
+    expect($results->pluck('metadata.order_value')->sort()->values()->all())->toBe([75, 100, 200]);
+});
+
+it('compares numeric metadata numerically in orWhere conditions', function () {
+    $results = $this->user->credits()
+        ->whereMetadata('source', 'bonus')
+        ->orWhereMetadata('order_value', '>', 150)
+        ->get();
+
+    // bonus (order_value 25) + Purchase 3 (order_value 200)
+    expect($results)->toHaveCount(2);
+});
+
+it('ignores non-numeric values when comparing a metadata key numerically', function () {
+    // The same key holding text elsewhere must not fail the numeric cast.
+    $this->user->creditAdd(10.00, 'Unquantified', [
+        'source' => 'purchase',
+        'order_value' => 'not-a-number',
+    ]);
+
+    $results = $this->user->credits()->whereMetadata('order_value', '>', 50)->get();
+
+    expect($results)->toHaveCount(3);
 });

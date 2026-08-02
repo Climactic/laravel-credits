@@ -2,8 +2,10 @@
 
 namespace Climactic\Credits\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int|string $id
@@ -14,9 +16,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property float $running_balance
  * @property string $creditable_type
  * @property int|string $creditable_id
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property-read \Illuminate\Database\Eloquent\Model $creditable
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Model $creditable
  */
 class Credit extends Model
 {
@@ -93,7 +95,7 @@ class Credit extends Model
      * @param  mixed  $operator  Comparison operator or value if no operator
      * @param  mixed  $value  Value to compare (optional if operator is value)
      */
-    public function scopeWhereMetadata(\Illuminate\Database\Eloquent\Builder $query, string $key, $operator = null, $value = null): \Illuminate\Database\Eloquent\Builder
+    public function scopeWhereMetadata(Builder $query, string $key, $operator = null, $value = null): Builder
     {
         $key = $this->validateMetadataKey($key);
 
@@ -103,7 +105,46 @@ class Credit extends Model
             $operator = '=';
         }
 
-        return $query->where("metadata->{$key}", $operator, $value);
+        return $this->applyMetadataComparison($query, $key, $operator, $value, 'and');
+    }
+
+    /**
+     * Apply a metadata comparison to the query.
+     *
+     * Extracting a JSON value yields text, which makes an ordering comparison
+     * against a number mean different things per driver: PostgreSQL compares
+     * lexicographically ('100' sorts below '50'), while SQLite ranks any text
+     * above any number. Cast the value so the comparison means what it reads
+     * like, and exclude rows whose value is not a number at all.
+     *
+     * @param  string  $key  Metadata key, already validated and in JSON path form
+     * @param  mixed  $operator  Comparison operator
+     * @param  mixed  $value  Value to compare
+     * @param  string  $boolean  'and' or 'or'
+     */
+    protected function applyMetadataComparison(Builder $query, string $key, $operator, $value, string $boolean): Builder
+    {
+        $column = "metadata->{$key}";
+        $driver = $query->getModel()->getConnection()->getDriverName();
+
+        $comparable = is_numeric($value)
+            && in_array($operator, ['<', '<=', '>', '>='], true)
+            && in_array($driver, ['pgsql', 'sqlite'], true);
+
+        if (! $comparable) {
+            return $query->where($column, $operator, $value, $boolean);
+        }
+
+        $wrapped = $query->getQuery()->getGrammar()->wrap($column);
+
+        // A CASE guard rather than a bare cast: non-numeric values yield NULL
+        // and simply do not match, instead of aborting the query (PostgreSQL)
+        // or being ranked above every number (SQLite).
+        $cast = $driver === 'pgsql'
+            ? sprintf("case when %s ~ '%s' then (%s)::numeric end", $wrapped, '^-?[0-9]+(\.[0-9]+)?$', $wrapped)
+            : sprintf("case when %s glob '%s' then cast(%s as real) end", $wrapped, '[-0-9]*', $wrapped);
+
+        return $query->whereRaw("({$cast}) {$operator} ?", [$value], $boolean);
     }
 
     /**
@@ -115,7 +156,7 @@ class Credit extends Model
      * @param  string  $key  Metadata key (supports dot notation)
      * @param  mixed  $value  Value to search for
      */
-    public function scopeWhereMetadataContains(\Illuminate\Database\Eloquent\Builder $query, string $key, $value): \Illuminate\Database\Eloquent\Builder
+    public function scopeWhereMetadataContains(Builder $query, string $key, $value): Builder
     {
         $key = $this->validateMetadataKey($key);
 
@@ -127,7 +168,7 @@ class Credit extends Model
      *
      * @param  string  $key  Metadata key (supports dot notation)
      */
-    public function scopeWhereMetadataHas(\Illuminate\Database\Eloquent\Builder $query, string $key): \Illuminate\Database\Eloquent\Builder
+    public function scopeWhereMetadataHas(Builder $query, string $key): Builder
     {
         $key = $this->validateMetadataKey($key);
 
@@ -139,7 +180,7 @@ class Credit extends Model
      *
      * @param  string  $key  Metadata key (supports dot notation)
      */
-    public function scopeWhereMetadataNull(\Illuminate\Database\Eloquent\Builder $query, string $key): \Illuminate\Database\Eloquent\Builder
+    public function scopeWhereMetadataNull(Builder $query, string $key): Builder
     {
         $key = $this->validateMetadataKey($key);
 
@@ -155,7 +196,7 @@ class Credit extends Model
      * @param  mixed  $operator  Comparison operator
      * @param  mixed  $value  Length to compare
      */
-    public function scopeWhereMetadataLength(\Illuminate\Database\Eloquent\Builder $query, string $key, $operator = null, $value = null): \Illuminate\Database\Eloquent\Builder
+    public function scopeWhereMetadataLength(Builder $query, string $key, $operator = null, $value = null): Builder
     {
         $key = $this->validateMetadataKey($key);
 
@@ -177,7 +218,7 @@ class Credit extends Model
      * @param  mixed  $operator  Comparison operator or value if no operator
      * @param  mixed  $value  Value to compare (optional if operator is value)
      */
-    public function scopeOrWhereMetadata(\Illuminate\Database\Eloquent\Builder $query, string $key, $operator = null, $value = null): \Illuminate\Database\Eloquent\Builder
+    public function scopeOrWhereMetadata(Builder $query, string $key, $operator = null, $value = null): Builder
     {
         $key = $this->validateMetadataKey($key);
 
@@ -187,7 +228,7 @@ class Credit extends Model
             $operator = '=';
         }
 
-        return $query->orWhere("metadata->{$key}", $operator, $value);
+        return $this->applyMetadataComparison($query, $key, $operator, $value, 'or');
     }
 
     /**
@@ -199,7 +240,7 @@ class Credit extends Model
      * @param  string  $key  Metadata key (supports dot notation)
      * @param  mixed  $value  Value to search for
      */
-    public function scopeOrWhereMetadataContains(\Illuminate\Database\Eloquent\Builder $query, string $key, $value): \Illuminate\Database\Eloquent\Builder
+    public function scopeOrWhereMetadataContains(Builder $query, string $key, $value): Builder
     {
         $key = $this->validateMetadataKey($key);
 
@@ -211,7 +252,7 @@ class Credit extends Model
      *
      * @param  string  $key  Metadata key (supports dot notation)
      */
-    public function scopeOrWhereMetadataHas(\Illuminate\Database\Eloquent\Builder $query, string $key): \Illuminate\Database\Eloquent\Builder
+    public function scopeOrWhereMetadataHas(Builder $query, string $key): Builder
     {
         $key = $this->validateMetadataKey($key);
 
@@ -223,7 +264,7 @@ class Credit extends Model
      *
      * @param  string  $key  Metadata key (supports dot notation)
      */
-    public function scopeOrWhereMetadataNull(\Illuminate\Database\Eloquent\Builder $query, string $key): \Illuminate\Database\Eloquent\Builder
+    public function scopeOrWhereMetadataNull(Builder $query, string $key): Builder
     {
         $key = $this->validateMetadataKey($key);
 
@@ -239,7 +280,7 @@ class Credit extends Model
      * @param  mixed  $operator  Comparison operator
      * @param  mixed  $value  Length to compare
      */
-    public function scopeOrWhereMetadataLength(\Illuminate\Database\Eloquent\Builder $query, string $key, $operator = null, $value = null): \Illuminate\Database\Eloquent\Builder
+    public function scopeOrWhereMetadataLength(Builder $query, string $key, $operator = null, $value = null): Builder
     {
         $key = $this->validateMetadataKey($key);
 

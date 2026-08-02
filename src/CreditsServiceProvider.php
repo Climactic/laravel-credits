@@ -12,6 +12,10 @@ class CreditsServiceProvider extends PackageServiceProvider
         $package
             ->name('laravel-credits')
             ->hasConfigFile()
-            ->hasMigrations(['create_credits_table', 'create_credit_accounts_table']);
+            ->hasMigrations([
+                'create_credits_table',
+                'create_credit_accounts_table',
+                'increase_credits_precision',
+            ]);
     }
 }

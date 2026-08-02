@@ -26,6 +26,7 @@ A ledger-based Laravel package for managing credit-based systems in your applica
   - [⬆️ Upgrading from 1.4 and earlier](#️-upgrading-from-14-and-earlier)
   - [⚙️ Configuration](#️-configuration)
     - [🗄️ Database Recommendations](#️-database-recommendations)
+    - [💵 Amount Limits](#-amount-limits)
   - [🚀 Usage](#-usage)
     - [🔧 Setup Your Model](#-setup-your-model)
     - [💳 Basic Usage](#-basic-usage)
@@ -107,14 +108,19 @@ php artisan vendor:publish --tag="credits-config"
 
 ## ⬆️ Upgrading from 1.4 and earlier
 
-Version 1.5 adds the `credit_accounts` table and makes it the balance of record. Publish and run the new migration:
+Version 1.5 adds the `credit_accounts` table, makes it the balance of record, and widens the amount columns. Publish and run the new migrations:
 
 ```bash
 php artisan vendor:publish --tag="credits-migrations"
 php artisan migrate
 ```
 
-The migration backfills one account row per creditable from the running balance of its most recent ledger entry, so existing balances carry over untouched. There are no API changes — `creditBalance()`, `creditAdd()`, `creditDeduct()` and `creditTransfer()` keep their signatures and behaviour.
+Two migrations are added:
+
+- `create_credit_accounts_table` backfills one account row per creditable from the running balance of its most recent ledger entry, so existing balances carry over untouched.
+- `increase_credits_precision` widens `amount` and `running_balance` from `decimal(10,2)` to `decimal(14,2)`, raising the ceiling from 99,999,999.99 to 999,999,999,999.99. On a large ledger this rewrites the table, so expect it to take a while.
+
+There are no API changes — `creditBalance()`, `creditAdd()`, `creditDeduct()` and `creditTransfer()` keep their signatures and behaviour.
 
 If your creditables use non-integer primary keys, adjust the `creditable_id` column in the published migration the same way you did for the `credits` table.
 
@@ -148,6 +154,14 @@ This requires a database engine with row-level locking:
 For production environments with concurrent users, use PostgreSQL or MySQL/MariaDB (InnoDB).
 
 The default isolation level (`READ COMMITTED` on both PostgreSQL and MySQL) is sufficient — the guarantee comes from the lock, not from the isolation level.
+
+### 💵 Amount Limits
+
+Amounts and balances are stored as `decimal(14,2)`, capping a balance at **999,999,999,999.99**.
+
+That ceiling is not arbitrary: the package passes amounts around as PHP floats, and PHP's default `precision` ini setting keeps 14 significant digits when converting a float to a string for the driver. Beyond that the cents are already gone before the value reaches the database, so the column is sized to reject such a write rather than store a silently rounded number.
+
+If you need larger balances, raise `precision` in `php.ini` and widen the columns in the published migration together — widening the column alone will not preserve the cents.
 
 ## 🚀 Usage
 
@@ -256,7 +270,8 @@ $purchases = $user->credits()
     ->whereMetadata('source', 'purchase')
     ->get();
 
-// Query with comparison operators
+// Query with comparison operators. Numeric values are compared numerically,
+// not as text, so 100 correctly sorts above 50 on every supported driver.
 $highValue = $user->credits()
     ->whereMetadata('order_value', '>', 100)
     ->get();
