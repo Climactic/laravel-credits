@@ -2,6 +2,32 @@
 
 All notable changes to `laravel-credits` will be documented in this file.
 
+## Unreleased
+
+### Fixed
+
+- **Concurrent `creditAdd()`/`creditDeduct()` on the same creditable could silently lose an update.** Both methods locked the latest ledger row, which moves with every insert: a writer blocked on that lock woke up holding the row that used to be latest, never saw the entry committed ahead of it, and computed its new balance from a stale value. No exception was raised, so the built-in transaction retry could not help. Under `allow_negative_balance = false` this also let concurrent deductions overdraw the balance.
+
+  Balances now live in a new `credit_accounts` table, one row per creditable, and every mutation locks that row instead. Because the row exists exactly once and never moves, concurrent writers are properly serialized.
+
+- **Amounts overflowed the schema well below the values the package advertised.** `amount` and `running_balance` were `decimal(10,2)`, capping a balance at 99,999,999.99. They are now `decimal(14,2)`, raising the ceiling to 999,999,999,999.99 — the largest value PHP's default `precision` setting still converts to a string without dropping the cents. SQLite ignores column precision, which is why this never surfaced in the test suite.
+
+- **Numeric metadata comparisons returned the wrong rows.** `whereMetadata('order_value', '>', 50)` compared the extracted JSON value as text, so on PostgreSQL '100' and '200' sorted below '50' and were silently excluded; on SQLite any text value ranked above every number and was silently included. Ordering comparisons against a numeric value are now cast to a number, with non-numeric values excluded rather than aborting the query.
+
+### Added
+
+- `credit_accounts` table and the `creditAccount()` relationship. The migration backfills balances from the existing ledger, so upgrades need nothing beyond `php artisan vendor:publish --tag="credits-migrations" && php artisan migrate`.
+- `increase_credits_precision` migration, which widens the amount columns of installations created before this release.
+- `credits.accounts_table_name` config option.
+- Concurrency tests that drive the package from separate processes against a real PostgreSQL server.
+- The test suite can now run against PostgreSQL by setting `DB_CONNECTION=pgsql` and the usual `DB_*` variables.
+
+### Changed
+
+- `creditBalance()` reads the account row (an indexed single-row lookup) instead of sorting the ledger, falling back to the ledger when no account row exists yet.
+- `creditAdd()`, `creditDeduct()` and `creditTransfer()` open their transaction on the model's own connection rather than the default one.
+- `creditTransfer()` now throws an `InvalidArgumentException` when sender and recipient are on different connections. A transaction only covers one connection, so the recipient's half used to commit outside it — a rollback would debit the sender and credit nobody.
+
 ## v1.4.2 - 2026-03-26
 
 ### What's Changed

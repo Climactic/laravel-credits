@@ -1,0 +1,74 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        $accountsTable = config('credits.accounts_table_name', 'credit_accounts');
+
+        Schema::create($accountsTable, function (Blueprint $table) {
+            $table->id();
+
+            // Kept in sync with the creditable columns of the credits table.
+            // Change these if your creditables use non-integer primary keys.
+            $table->string('creditable_type');
+            $table->unsignedBigInteger('creditable_id');
+
+            // Matches the precision of the ledger columns.
+            $table->decimal('balance', 14, 2)->default(0);
+            $table->timestamps();
+
+            // One account per creditable. This is what makes the row a stable
+            // lock target: it exists exactly once and never moves.
+            $table->unique(['creditable_type', 'creditable_id']);
+        });
+
+        $this->backfill($accountsTable);
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists(config('credits.accounts_table_name', 'credit_accounts'));
+    }
+
+    /**
+     * Seed one account per creditable from the running balance of its most
+     * recent ledger entry, so existing installations keep their balances.
+     */
+    protected function backfill(string $accountsTable): void
+    {
+        $creditsTable = config('credits.table_name', 'credits');
+
+        if (! Schema::hasTable($creditsTable)) {
+            return;
+        }
+
+        $now = now();
+
+        DB::table($creditsTable)
+            ->selectRaw('creditable_type, creditable_id, max(id) as last_id')
+            ->groupBy('creditable_type', 'creditable_id')
+            ->orderBy('creditable_type')
+            ->orderBy('creditable_id')
+            ->chunk(500, function ($creditables) use ($accountsTable, $creditsTable, $now) {
+                $balances = DB::table($creditsTable)
+                    ->whereIn('id', $creditables->pluck('last_id'))
+                    ->pluck('running_balance', 'id');
+
+                DB::table($accountsTable)->insert(
+                    $creditables->map(fn ($creditable) => [
+                        'creditable_type' => $creditable->creditable_type,
+                        'creditable_id' => $creditable->creditable_id,
+                        'balance' => $balances[$creditable->last_id] ?? 0,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ])->all()
+                );
+            });
+    }
+};

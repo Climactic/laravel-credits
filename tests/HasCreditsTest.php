@@ -4,11 +4,12 @@ use Climactic\Credits\Events\CreditsAdded;
 use Climactic\Credits\Events\CreditsDeducted;
 use Climactic\Credits\Events\CreditsTransferred;
 use Climactic\Credits\Exceptions\InsufficientCreditsException;
+use Climactic\Credits\Tests\TestCase;
 use Climactic\Credits\Tests\TestModels\User;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
-    /** @var \Climactic\Credits\Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->user = User::create([
         'name' => 'Test User',
         'email' => 'test@example.com',
@@ -66,6 +67,23 @@ it('can transfer credits between users', function () {
         ->and($result['recipient_balance'])->toBe(50.00)
         ->and($this->user->creditBalance())->toBe(50.00)
         ->and($recipient->creditBalance())->toBe(50.00);
+});
+
+it('refuses to transfer between models on different connections', function () {
+    // A transaction covers one connection, so the recipient's half would commit
+    // outside it — a rollback would debit the sender and credit nobody.
+    $recipient = User::create([
+        'name' => 'Recipient User',
+        'email' => 'recipient@example.com',
+    ]);
+    $recipient->setConnection('some_other_connection');
+
+    $this->user->creditAdd(100.00);
+
+    expect(fn () => $this->user->creditTransfer($recipient, 50.00))
+        ->toThrow(InvalidArgumentException::class, 'different database connections');
+
+    expect($this->user->creditBalance())->toBe(100.00);
 });
 
 it('can get transaction history', function () {

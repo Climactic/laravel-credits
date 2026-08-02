@@ -1,9 +1,10 @@
 <?php
 
+use Climactic\Credits\Tests\TestCase;
 use Climactic\Credits\Tests\TestModels\User;
 
 beforeEach(function () {
-    /** @var \Climactic\Credits\Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->user = User::create([
         'name' => 'Test User',
         'email' => 'test@example.com',
@@ -12,26 +13,26 @@ beforeEach(function () {
 
 it('rejects zero amount when adding credits', function () {
     expect(fn () => $this->user->creditAdd(0.00, 'Invalid amount'))
-        ->toThrow(\InvalidArgumentException::class, 'Amount must be greater than 0.');
+        ->toThrow(InvalidArgumentException::class, 'Amount must be greater than 0.');
 });
 
 it('rejects negative amount when adding credits', function () {
     expect(fn () => $this->user->creditAdd(-50.00, 'Invalid amount'))
-        ->toThrow(\InvalidArgumentException::class, 'Amount must be greater than 0.');
+        ->toThrow(InvalidArgumentException::class, 'Amount must be greater than 0.');
 });
 
 it('rejects zero amount when deducting credits', function () {
     $this->user->creditAdd(100.00);
 
     expect(fn () => $this->user->creditDeduct(0.00, 'Invalid amount'))
-        ->toThrow(\InvalidArgumentException::class, 'Amount must be greater than 0.');
+        ->toThrow(InvalidArgumentException::class, 'Amount must be greater than 0.');
 });
 
 it('rejects negative amount when deducting credits', function () {
     $this->user->creditAdd(100.00);
 
     expect(fn () => $this->user->creditDeduct(-50.00, 'Invalid amount'))
-        ->toThrow(\InvalidArgumentException::class, 'Amount must be greater than 0.');
+        ->toThrow(InvalidArgumentException::class, 'Amount must be greater than 0.');
 });
 
 it('prevents balance manipulation via negative deduction', function () {
@@ -39,7 +40,7 @@ it('prevents balance manipulation via negative deduction', function () {
     $this->user->creditAdd(100.00, 'Initial balance');
 
     expect(fn () => $this->user->creditDeduct(-50.00, 'Attempting to increase via deduction'))
-        ->toThrow(\InvalidArgumentException::class, 'Amount must be greater than 0.');
+        ->toThrow(InvalidArgumentException::class, 'Amount must be greater than 0.');
 
     // Balance should remain unchanged at 100.00
     expect($this->user->creditBalance())->toBe(100.00);
@@ -50,7 +51,7 @@ it('prevents balance manipulation via negative addition', function () {
     $this->user->creditAdd(100.00, 'Initial balance');
 
     expect(fn () => $this->user->creditAdd(-50.00, 'Attempting to decrease via addition'))
-        ->toThrow(\InvalidArgumentException::class, 'Amount must be greater than 0.');
+        ->toThrow(InvalidArgumentException::class, 'Amount must be greater than 0.');
 
     // Balance should remain unchanged at 100.00
     expect($this->user->creditBalance())->toBe(100.00);

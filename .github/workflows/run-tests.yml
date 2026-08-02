@@ -58,3 +58,52 @@ jobs:
 
       - name: Execute tests
         run: vendor/bin/pest --ci
+
+  test-pgsql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    name: Concurrency - PostgreSQL
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: credits
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: credits
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pgsql, pdo_pgsql, sqlite, pdo_sqlite, bcmath, intl, fileinfo
+          coverage: none
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-interaction
+
+      # The concurrency tests spawn worker processes on their own connections,
+      # which is the only way to catch a lost update between two writers.
+      - name: Execute concurrency tests
+        run: vendor/bin/pest --ci tests/PostgresConcurrencyTest.php
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: credits
+          DB_USERNAME: credits
+          DB_PASSWORD: secret

@@ -10,7 +10,7 @@ class CreditsDeducted implements ShouldDispatchAfterCommit
     /**
      * Create a new event representing credits deducted from a creditable model.
      *
-     * @param  \Illuminate\Database\Eloquent\Model  $creditable  The model from which credits were deducted.
+     * @param  Model  $creditable  The model from which credits were deducted.
      * @param  int  $transactionId  Identifier for the related transaction.
      * @param  float  $amount  The amount deducted.
      * @param  float  $newBalance  The resulting balance after the deduction.

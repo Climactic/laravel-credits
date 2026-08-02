@@ -1,10 +1,12 @@
 <?php
 
 use Climactic\Credits\Exceptions\InsufficientCreditsException;
+use Climactic\Credits\Tests\TestCase;
 use Climactic\Credits\Tests\TestModels\User;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
-    /** @var \Climactic\Credits\Tests\TestCase $this */
+    /** @var TestCase $this */
     $this->user = User::create([
         'name' => 'Test User',
         'email' => 'test@example.com',
@@ -21,7 +23,7 @@ it('prevents race conditions when adding credits concurrently', function () {
 
     // Simulate concurrent credit additions by nesting DB transactions
     // In a real concurrent scenario, these would run in separate processes/threads
-    \Illuminate\Support\Facades\DB::transaction(function () {
+    DB::transaction(function () {
         // First concurrent operation: read balance and prepare to add 50
         $balance1 = $this->user->creditBalance();
         expect($balance1)->toBe(100.00);
@@ -50,7 +52,7 @@ it('prevents race conditions when adding credits concurrently', function () {
 it('prevents race conditions when deducting credits concurrently', function () {
     $this->user->creditAdd(200.00, 'Initial balance');
 
-    \Illuminate\Support\Facades\DB::transaction(function () {
+    DB::transaction(function () {
         $balance1 = $this->user->creditBalance();
         expect($balance1)->toBe(200.00);
 
@@ -80,7 +82,7 @@ it('prevents overdraft race conditions with insufficient balance check', functio
 
     // Try to deduct more than available in a concurrent scenario
     // The lock should prevent both operations from reading the same balance
-    \Illuminate\Support\Facades\DB::transaction(function () {
+    DB::transaction(function () {
         // First deduction succeeds
         $this->user->creditDeduct(80.00, 'Large deduction');
         expect($this->user->creditBalance())->toBe(20.00);
@@ -107,7 +109,7 @@ it('acquires locks in deterministic order during transfers to prevent deadlocks'
 
     // Simulate bidirectional transfers in the same transaction
     // The deterministic locking order should prevent deadlocks
-    \Illuminate\Support\Facades\DB::transaction(function () use ($userA, $userB) {
+    DB::transaction(function () use ($userA, $userB) {
         // Transfer A → B
         $result1 = $userA->creditTransfer($userB, 30.00, 'Transfer A to B');
 
@@ -194,7 +196,7 @@ it('maintains transaction integrity across retries', function () {
     // Verify that even with retry logic, transactions maintain ACID properties
     $this->user->creditAdd(100.00, 'Initial');
 
-    \Illuminate\Support\Facades\DB::transaction(function () {
+    DB::transaction(function () {
         // Multiple operations within a single transaction
         $this->user->creditDeduct(30.00, 'Op 1');
         $this->user->creditAdd(20.00, 'Op 2');

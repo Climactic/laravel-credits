@@ -227,7 +227,10 @@ try {
 Publish config: `php artisan vendor:publish --tag="credits-config"`
 
 - `allow_negative_balance` (default: false) - Allow balances to go negative
-- `table_name` (default: 'credits') - Database table name
+- `table_name` (default: 'credits') - Ledger table name
+- `accounts_table_name` (default: 'credit_accounts') - Per-creditable account table name
+
+Amounts are stored as `decimal(14,2)`, capping a balance at 999,999,999,999.99 — the largest value PHP's default `precision` setting converts to a string without dropping the cents.
 
 ### Best Practices
 
@@ -272,8 +275,14 @@ Schema::table('credits', function (Blueprint $table) {
 
 **SQLite** - Limited JSON indexing support. Consider MySQL/PostgreSQL for high-volume metadata queries.
 
+### Concurrency
+
+Balances live in the `credit_accounts` table, one row per creditable. Every mutation locks that row with `SELECT ... FOR UPDATE`, appends the ledger entry, and writes the balance back inside a single transaction, so concurrent writers on the same creditable take turns. `creditBalance()` reads the account row; `creditAccount()` exposes it as a relationship.
+
+Do not write to the `credits` table directly — bypassing `creditAdd()`/`creditDeduct()` skips the lock and desynchronizes the account balance.
+
 ### Database Support
 
-- **MySQL/MariaDB (InnoDB)**: Full support with row-level locking
-- **PostgreSQL**: Full support with advisory locks
-- **SQLite**: Basic support (limited concurrency, not recommended for production)
+- **PostgreSQL**: full support with row-level locking
+- **MySQL/MariaDB (InnoDB)**: full support with row-level locking
+- **SQLite**: ignores row-level locking (not recommended for concurrent production use)
